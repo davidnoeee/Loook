@@ -372,16 +372,19 @@ struct SettingsView: View {
                 
                 HStack(spacing: 10) {
                     Button("Test Posture") {
+                        isPresented = false
                         reminderManager.testPostureReminder()
                     }
                     .buttonStyle(.bordered)
                     
                     Button("Test Blink") {
+                        isPresented = false
                         reminderManager.testBlinkReminder()
                     }
                     .buttonStyle(.bordered)
                     
                     Button("Test 20/20/20") {
+                        isPresented = false
                         reminderManager.testCountdownReminder()
                     }
                     .buttonStyle(.bordered)
