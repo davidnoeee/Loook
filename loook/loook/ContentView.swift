@@ -6,50 +6,56 @@ struct ContentView: View {
     @State private var showSettings = false
     
     var body: some View {
-        VStack {
+        // Invisible view - no background elements, just the reminders as needed
+        ZStack {
+            Color.clear
+                .frame(width: 0, height: 0)
+                .contentShape(Rectangle()) // Just for hit-testing
+
             if reminderManager.showArrowReminder {
-                PostureReminderView(isShowing: $reminderManager.showArrowReminder)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(y: -20)),
-                        removal: .opacity.combined(with: .offset(y: -40))
-                    ))
+                VStack {
+                    PostureReminderView(isShowing: $reminderManager.showArrowReminder)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: -20)),
+                            removal: .opacity.combined(with: .offset(y: -40))
+                        ))
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
+                    
+                    Spacer()
+                }
             }
             
             if reminderManager.showEyeReminder {
-                BlinkReminderView(isShowing: $reminderManager.showEyeReminder)
-                    .transition(.scale.combined(with: .opacity))
+                VStack {
+                    BlinkReminderView(isShowing: $reminderManager.showEyeReminder)
+                        .transition(.scale.combined(with: .opacity))
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 40)
+                    
+                    Spacer()
+                }
             }
             
             if reminderManager.showCountdownReminder {
-                CountdownReminderView(
-                    isShowing: $reminderManager.showCountdownReminder,
-                    secondsRemaining: $reminderManager.countdownSeconds
-                )
-                .transition(.opacity)
+                VStack {
+                    CountdownReminderView(
+                        isShowing: $reminderManager.showCountdownReminder,
+                        secondsRemaining: $reminderManager.countdownSeconds
+                    )
+                    .transition(.opacity)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 40)
+                    
+                    Spacer()
+                }
             }
-            
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 40)
-        .sheet(isPresented: $showSettings) {
-            SettingsView(reminderManager: reminderManager)
-                .frame(width: 400, height: 320)
-        }
+        .ignoresSafeArea()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.clear)
         .onAppear {
             reminderManager.startTimers()
-        }
-        .overlay(alignment: .topTrailing) {
-            Button {
-                showSettings.toggle()
-            } label: {
-                Image(systemName: "gear")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
-                    .padding()
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut(",", modifiers: .command)
         }
     }
 }
@@ -132,12 +138,67 @@ class ReminderManager: ObservableObject {
     }
     
     func toggleLaunchAtLogin() {
-        let bundleId = Bundle.main.bundleIdentifier ?? ""
-        
         if launchAtLogin {
             try? SMAppService.mainApp.register()
         } else {
             try? SMAppService.mainApp.unregister()
+        }
+    }
+    
+    // Test methods
+    func testPostureReminder() {
+        // Hide other reminders first
+        showEyeReminder = false
+        showCountdownReminder = false
+        
+        // Show arrow reminder
+        showArrowReminder = true
+        
+        // Auto-dismiss after 3 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            withAnimation {
+                self.showArrowReminder = false
+            }
+        }
+    }
+    
+    func testBlinkReminder() {
+        // Hide other reminders first
+        showArrowReminder = false
+        showCountdownReminder = false
+        
+        // Show eye reminder
+        showEyeReminder = true
+        
+        // Auto-dismiss after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                self.showEyeReminder = false
+            }
+        }
+    }
+    
+    func testCountdownReminder() {
+        // Hide other reminders first
+        showArrowReminder = false
+        showEyeReminder = false
+        
+        // Reset and show countdown
+        countdownSeconds = 20
+        showCountdownReminder = true
+        
+        // Start the countdown timer
+        countdownProgressTimer?.invalidate()
+        countdownProgressTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+            guard let self = self else { return }
+            if self.countdownSeconds > 0 {
+                self.countdownSeconds -= 1
+            } else {
+                timer.invalidate()
+                withAnimation {
+                    self.showCountdownReminder = false
+                }
+            }
         }
     }
 }
@@ -202,7 +263,7 @@ struct BlinkReminderView: View {
             }
         }
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.6, blendDuration: 0)) {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.6)) {
                 scale = 1.0
             }
         }
@@ -257,6 +318,7 @@ struct CountdownReminderView: View {
 // Settings View
 struct SettingsView: View {
     @ObservedObject var reminderManager: ReminderManager
+    @Binding var isPresented: Bool
     
     var body: some View {
         VStack(spacing: 20) {
@@ -300,28 +362,47 @@ struct SettingsView: View {
                             reminderManager.startTimers()
                         }
                 }
+                
+                Divider()
+                
+                // Test buttons section
+                Text("Test Animations")
+                    .font(.headline)
+                    .padding(.top, 5)
+                
+                HStack(spacing: 10) {
+                    Button("Test Posture") {
+                        reminderManager.testPostureReminder()
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button("Test Blink") {
+                        reminderManager.testBlinkReminder()
+                    }
+                    .buttonStyle(.bordered)
+                    
+                    Button("Test 20/20/20") {
+                        reminderManager.testCountdownReminder()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .padding(.top, 5)
             }
             .padding(.horizontal)
             
-            Spacer()
+            Spacer(minLength: 10)
             
             HStack {
                 Spacer()
                 Button("Close") {
-                    NSApp.keyWindow?.close()
+                    isPresented = false
                 }
                 .keyboardShortcut(.escape, modifiers: [])
             }
             .padding(.horizontal)
         }
         .padding()
-        .frame(minWidth: 350, minHeight: 500)
-    }
-}
-
-// Preview
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+        .frame(width: 350)
+        .fixedSize(horizontal: true, vertical: true) // Makes the view hug its content vertically
     }
 }
