@@ -239,36 +239,55 @@ class ReminderManager: ObservableObject {
     }
 }
 
-// Posture Reminder View (Arrow in Pill) - SIMPLIFIED VERSION
+// Updated Posture Reminder View with new design language
 struct PostureReminderView: View {
     @Binding var isShowing: Bool
-    @State private var circleOffset: CGFloat = 20
+    
+    // Frame animation states
+    @State private var frameScale: CGFloat = 0.2
     @State private var frameOpacity: Double = 0
-    @State private var frameBlur: CGFloat = 10
+    @State private var frameBlur: CGFloat = 25
+    @State private var frameHeight: CGFloat = 120
+    @State private var frameWidth: CGFloat = 100
+    @State private var frameOffsetY: CGFloat = 20
+    
+    // Circle animation states
+    @State private var circleScale: CGFloat = 0.2
     @State private var circleOpacity: Double = 0
+    @State private var circleOffset: CGFloat = 20
+    @State private var circleBlur: CGFloat = 15
+    
+    // Arrow animation states
+    @State private var arrowScale: CGFloat = 0.2
     @State private var arrowOpacity: Double = 0
     @State private var arrowBounce: CGFloat = 0
+    @State private var arrowBlur: CGFloat = 5
     
     var body: some View {
         ZStack {
-            // Pill background
-            Capsule()
+            // Pill background that can morph to circle
+            Capsule(style: .continuous)
                 .fill(Material.ultraThinMaterial)
-                .frame(width: 100, height: 140)
-                .overlay(
-                    Capsule()
-                        .strokeBorder(LinearGradient(
-                            colors: [.white.opacity(0.2), .white.opacity(0.05)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ), lineWidth: 0.5)
-                )
-                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                .frame(width: frameWidth, height: frameHeight)
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(Color.black, lineWidth: 0.8)
+                }
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        .padding(0.8)
+                }
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.35), radius: 20, x: 0, y: 5)
+                .scaleEffect(frameScale)
                 .opacity(frameOpacity)
                 .blur(radius: frameBlur)
+                .offset(y: frameOffsetY)
             
-            // Circle with arrow
+            // Circle with arrow - playful bouncy movement
             ZStack {
+                // White circle
                 Circle()
                     .fill(
                         LinearGradient(
@@ -278,65 +297,179 @@ struct PostureReminderView: View {
                         )
                     )
                     .frame(width: 70, height: 70)
+                    .overlay {
+                        Circle()
+                            .stroke(Color.black.opacity(0.15), lineWidth: 0.5)
+                    }
+                    .overlay {
+                        Circle()
+                            .stroke(Color.white.opacity(0.5), lineWidth: 0.5)
+                            .padding(0.5)
+                    }
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .scaleEffect(circleScale)
+                    .blur(radius: frameBlur)
                     .opacity(circleOpacity)
                 
+                // Arrow with bouncy animation
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.black)
                     .offset(y: arrowBounce)
+                    .scaleEffect(arrowScale)
                     .opacity(arrowOpacity)
+                    .blur(radius: arrowBlur)
             }
             .offset(y: circleOffset)
         }
-        .onAppear {
-            // Sequence the animations but keep them simple
-            
-            // 1. Show the frame
-            withAnimation(.easeIn(duration: 0.2)) {
-                frameOpacity = 1
+        .environment(\.colorScheme, .dark)
+        .onAppear(perform: startAnimation)
+    }
+    
+    private func startAnimation() {
+        // PLAYFUL YET FLUID ANIMATION SEQUENCE
+        
+        // 1. Frame appears with bounce and blur
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
+            frameScale = 1.07
+            frameOpacity = 1
+            frameBlur = 5
+            circleBlur = 5
+            arrowBlur = 0
+            // Move up to keep top aligned
+        }
+        
+        // Frame settles with less blur
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                frameScale = 1.0
                 frameBlur = 0
+                circleBlur = 0
+                //frameHeight = 130
+                //frameOffsetY = 5
             }
-            
-            // 2. Show the circle
-            withAnimation(.easeIn(duration: 0.3).delay(0.1)) {
+        }
+        
+        // 2. Circle appears quickly after frame starts appearing
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.65)) {
+                circleScale = 1.08
                 circleOpacity = 1
+                frameHeight = 140
+                frameOffsetY = 0
             }
             
-            // 3. Show the arrow
-            withAnimation(.easeIn(duration: 0.2).delay(0.2)) {
+            // Circle settles to normal size
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    circleScale = 1.0
+                }
+            }
+            
+            // Circle moves upwards with playful bounce
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                withAnimation(.spring(response: 0.7, dampingFraction: 0.65)) {
+                    circleOffset = -20
+                }
+            }
+            
+            
+        }
+        
+        // 3. Arrow appears and does a playful bounce
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                arrowScale = 1.0
                 arrowOpacity = 1
             }
             
-            // 4. Move circle up
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.65).delay(0.3)) {
-                circleOffset = -20
-            }
-            
-            // 5. Bounce the arrow
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.5).repeatCount(1, autoreverses: true)) {
-                arrowBounce = -5
-            }
-            
-            // Auto-dismiss after delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                // Fade out everything together
-                withAnimation(.easeOut(duration: 0.3)) {
-                    frameOpacity = 0
-                    circleOpacity = 0
-                    arrowOpacity = 0
+            // First playful bounce - up
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.55)) {
+                    arrowBounce = -11 // Bigger bounce for playfulness
+                    frameOffsetY = -3.5
+                    frameWidth = 98
+                    circleOffset = -24
                 }
                 
-                // Ensure isShowing is set to false
+                // Bounce back
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    isShowing = false
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.65)) {
+                        arrowBounce = -2 // Slight overshoot
+                        frameOffsetY = 0
+                        frameWidth = 100
+                        circleOffset = -20
+                    }
+                    
+                    // Small final adjustment
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            arrowBounce = -3 // Settle to slightly raised position
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 4. Playful exit animation - pill morphs into circle
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            // First a slight "prepare to exit" animation
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                frameScale = 1.05
+                circleScale = 1.05
+                arrowScale = 1.05
+                frameBlur = 2
+            }
+            
+            // Then begin the playful exit - pill starts morphing to circle
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                    // Morph pill to circle by reducing height and adjusting position
+                    frameHeight = 80
+                    frameOffsetY = 20 // Move up to keep top aligned
+                    circleOffset = 20
+                    
+                    
+                    // Add blur as transition begins
+                    frameBlur = 3
+                    circleBlur = 3
+                    arrowBlur = 3
+                    circleOpacity = 0.8
+                    circleScale = 0.8
+                    frameScale = 0.85
+                    arrowScale = 0.85
+                }
+                
+                // Final bounce-out and fade with increasing blur
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.23) {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        // Everything scales slightly up before disappearing
+                        frameScale = 0.6
+                        circleScale = 0.1
+                        arrowScale = 0.1
+                        
+                        // Move everything up slightly
+                        frameOffsetY = frameOffsetY - 5
+                        circleOffset = circleOffset - 5
+                        
+                        // Then quickly fade with heavy blur
+                        frameBlur = 6
+                        circleBlur = 6
+                        frameOpacity = 0
+                        circleOpacity = 0
+                        arrowOpacity = 0
+                        arrowBlur = 6
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        isShowing = false
+                    }
                 }
             }
         }
     }
 }
-
-// Blink Reminder View (Eye in Circle) - SIMPLIFIED VERSION
+// Updated Blink Reminder View with new design language
 struct BlinkReminderView: View {
     @Binding var isShowing: Bool
     @State private var scale: CGFloat = 0.8
@@ -348,23 +481,25 @@ struct BlinkReminderView: View {
     
     var body: some View {
         ZStack {
-            // Circle background
+            // Circle background with new design
             Circle()
                 .fill(Material.ultraThinMaterial)
                 .frame(width: 100, height: 100)
-                .overlay(
+                .overlay {
                     Circle()
-                        .strokeBorder(LinearGradient(
-                            colors: [.white.opacity(0.2), .white.opacity(0.05)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ), lineWidth: 0.5)
-                )
-                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                        .stroke(Color.black, lineWidth: 0.8)
+                }
+                .overlay {
+                    Circle()
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        .padding(0.8)
+                }
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.35), radius: 20, x: 0, y: 5)
                 .opacity(frameOpacity)
                 .blur(radius: frameBlur)
             
-            // Circle with eye
+            // Eye icon - now white with dark icon
             ZStack {
                 Circle()
                     .fill(
@@ -375,17 +510,27 @@ struct BlinkReminderView: View {
                         )
                     )
                     .frame(width: 70, height: 70)
+                    .overlay {
+                        Circle()
+                            .stroke(Color.black.opacity(0.15), lineWidth: 0.5)
+                    }
+                    .overlay {
+                        Circle()
+                            .stroke(Color.white.opacity(0.5), lineWidth: 0.5)
+                            .padding(0.5)
+                    }
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                     .scaleEffect(scale)
                     .opacity(circleOpacity)
                 
                 Image(systemName: "eye")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.black)
                     .scaleEffect(eyeScale)
                     .opacity(eyeOpacity)
             }
         }
+        .environment(\.colorScheme, .dark)
         .onAppear {
             // Sequence the animations but keep them simple
             
@@ -430,8 +575,7 @@ struct BlinkReminderView: View {
     }
 }
 
-
-// Countdown Reminder View (Distance Focus)
+// Updated Countdown Reminder View with new design language
 struct CountdownReminderView: View {
     @Binding var isShowing: Bool
     @Binding var secondsRemaining: Int
@@ -444,19 +588,21 @@ struct CountdownReminderView: View {
     
     var body: some View {
         ZStack {
-            // Horizontal pill
-            Capsule()
+            // Horizontal pill with new design
+            Capsule(style: .continuous)
                 .fill(Material.ultraThinMaterial)
                 .frame(width: 140, height: 60)
-                .overlay(
-                    Capsule()
-                        .strokeBorder(LinearGradient(
-                            colors: [.white.opacity(0.2), .white.opacity(0.05)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ), lineWidth: 0.5)
-                )
-                .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(Color.black, lineWidth: 0.8)
+                }
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        .padding(0.8)
+                }
+                .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 3)
+                .shadow(color: .black.opacity(0.35), radius: 20, x: 0, y: 5)
                 .opacity(frameOpacity)
                 .blur(radius: frameBlur)
                 .scaleEffect(frameScale)
@@ -496,7 +642,7 @@ struct CountdownReminderView: View {
                         }
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 16))
+                            .font(.system(size: 16, design: .rounded))
                             .foregroundColor(.secondary)
                     }
                     .buttonStyle(.plain)
@@ -505,6 +651,7 @@ struct CountdownReminderView: View {
             }
             .padding(.horizontal, isHovering ? 8 : 0)
         }
+        .environment(\.colorScheme, .dark)
         .onAppear {
             // Initial state
             frameOpacity = 0
@@ -563,7 +710,7 @@ struct CountdownReminderView: View {
     }
 }
 
-// Settings View with refined Luminare Design
+// Updated Settings View with more subtle strokes
 struct SettingsView: View {
     @ObservedObject var reminderManager: ReminderManager
     @Binding var isPresented: Bool
@@ -571,26 +718,26 @@ struct SettingsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 8) {
                 // Header
                 Text("Settings")
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 8)
+                    .padding(.vertical, 8)
                 
                 // Settings content
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
                     // Toggle section
-                    LuminareCard {
+                    SettingsCard {
                         VStack(alignment: .leading, spacing: 12) {
-                            LuminareToggle(title: "Enable Reminders", isOn: $reminderManager.isRemindersEnabled)
+                            SettingsToggle(title: "Enable Reminders", isOn: $reminderManager.isRemindersEnabled)
                                 .onChange(of: reminderManager.isRemindersEnabled) { _ in
                                     reminderManager.startTimers()
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             
-                            LuminareToggle(title: "Launch at Login", isOn: $reminderManager.launchAtLogin)
+                            SettingsToggle(title: "Launch at Login", isOn: $reminderManager.launchAtLogin)
                                 .onChange(of: reminderManager.launchAtLogin) { _ in
                                     reminderManager.toggleLaunchAtLogin()
                                 }
@@ -599,14 +746,14 @@ struct SettingsView: View {
                     }
                     
                     // Sliders section
-                    LuminareCard {
+                    SettingsCard {
                         VStack(alignment: .leading, spacing: 18) {
                             Text("Reminder Intervals")
                                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                                 .foregroundColor(.secondary)
                             
                             // Posture reminder: 5-30 minutes in 5-minute steps
-                            LuminareSlider(
+                            SettingsSlider(
                                 title: "Posture Reminder",
                                 value: $reminderManager.postureReminderInterval,
                                 range: 300...1800, // 5-30 minutes
@@ -618,7 +765,7 @@ struct SettingsView: View {
                             }
                             
                             // Blink reminder: 15sec-10min with variable steps
-                            LuminareSlider(
+                            SettingsSlider(
                                 title: "Blink Reminder",
                                 value: $reminderManager.blinkReminderInterval,
                                 range: 15...600, // 15sec-10min
@@ -633,7 +780,7 @@ struct SettingsView: View {
                             }
                             
                             // Distance Focus reminder: 5-30 minutes in 5-minute steps
-                            LuminareSlider(
+                            SettingsSlider(
                                 title: "Distance Focus",
                                 value: $reminderManager.distanceFocusReminderInterval,
                                 range: 300...1800, // 5-30 minutes
@@ -647,22 +794,22 @@ struct SettingsView: View {
                     }
                     
                     // Test buttons section
-                    LuminareCard {
+                    SettingsCard {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("Preview Animations")
                                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                                 .foregroundColor(.secondary)
                             
                             VStack(spacing: 8) {
-                                LuminareButton(title: "Posture", iconName: "arrow.up.circle") {
+                                ilebButton(text: "Posture") {
                                     reminderManager.testPostureReminder()
                                 }
                                 
-                                LuminareButton(title: "Blink", iconName: "eye") {
+                                ilebButton(text: "Blink") {
                                     reminderManager.testBlinkReminder()
                                 }
                                 
-                                LuminareButton(title: "Distance Focus", iconName: "ruler") {
+                                ilebButton(text: "Distance Focus") {
                                     reminderManager.testDistanceFocusReminder()
                                 }
                             }
@@ -670,42 +817,55 @@ struct SettingsView: View {
                     }
                     
                     // Reset & Quit section
-                    LuminareCard {
+                    SettingsCard {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("App Controls")
                                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                                 .foregroundColor(.secondary)
                             
                             VStack(spacing: 8) {
-                                LuminareButton(title: "Reset Pop-ups", iconName: "arrow.clockwise") {
+                                ilebButton(text: "Reset Pop-ups") {
                                     reminderManager.resetPopups()
                                 }
                                 
-                                LuminareButton(title: "Close", iconName: "xmark.circle") {
+                                ilebButton(text: "Close") {
                                     isPresented = false
                                 }
                                 
-                                LuminareButton(title: "Quit App", iconName: "power", style: .destructive) {
+                                ilebButton(text: "Quit App", destructive: true) {
                                     NSApplication.shared.terminate(nil)
                                 }
                             }
                         }
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 8)
             }
             .padding(.vertical, 8)
         }
         .frame(width: 320)
+        /*
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(Material.ultraThinMaterial)
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.black.opacity(0.6), lineWidth: 0.5)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.2), lineWidth: 0.8)
+                .padding(0.6)
+        }
+        .environment(\.colorScheme, .dark)
+        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 3)
+         */
     }
 }
 
-// Enhanced Luminare Design System Components
-struct LuminareCard<Content: View>: View {
+// Updated Design System Components with more subtle strokes
+struct SettingsCard<Content: View>: View {
     var content: Content
     
     init(@ViewBuilder content: () -> Content) {
@@ -716,25 +876,26 @@ struct LuminareCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             content
                 .padding(.vertical, 14)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 14)
         }
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Material.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Material.thin)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(LinearGradient(
-                    colors: [.white.opacity(0.2), .white.opacity(0.05)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                ), lineWidth: 0.5)
-        )
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 2)
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.black.opacity(0.6), lineWidth: 0.5)
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.white.opacity(0.2), lineWidth: 0.8)
+                .padding(0.6)
+        }
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 3)
     }
 }
 
-struct LuminareToggle: View {
+struct SettingsToggle: View {
     let title: String
     @Binding var isOn: Bool
     
@@ -743,12 +904,13 @@ struct LuminareToggle: View {
             Text(title)
                 .font(.system(size: 14, weight: .medium, design: .rounded))
                 .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
     }
 }
 
-struct LuminareSlider: View {
+struct SettingsSlider: View {
     let title: String
     @Binding var value: Double
     let range: ClosedRange<Double>
@@ -776,74 +938,55 @@ struct LuminareSlider: View {
     }
 }
 
-struct LuminareButton: View {
-    let title: String
-    let iconName: String
-    let action: () -> Void
-    let style: ButtonStyle
-    
-    enum ButtonStyle {
-        case standard, destructive
-    }
-    
-    init(title: String, iconName: String, style: ButtonStyle = .standard, action: @escaping () -> Void) {
-        self.title = title
-        self.iconName = iconName
-        self.style = style
-        self.action = action
-    }
+// ilebButton - The original button style with new design elements
+struct ilebButton: View {
+    var text: String
+    var destructive: Bool = false
+    var action: () -> Void
+    @State private var isPressed = false
     
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: iconName)
-                    .font(.system(size: 12))
-                Text(title)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-            }
-            .padding(.vertical, 7)
-            .padding(.horizontal, 10)
+        Text(text)
+            .font(.system(size: 15, weight: .regular, design: .rounded))
+            .foregroundStyle(destructive ? Color.red.opacity(0.8) : .primary)
+            .padding(.vertical, 10)
             .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(LuminareButtonStyle(style: style))
-    }
-}
-
-struct LuminareButtonStyle: ButtonStyle {
-    let style: LuminareButton.ButtonStyle
-    
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .foregroundColor(foregroundColor(configuration))
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Material.ultraThinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .strokeBorder(strokeColor(configuration), lineWidth: 0.5)
-                    )
+            .contentShape(Rectangle())
+            //.background(Material.ultraThinMaterial)
+            .background(isPressed ? .black.opacity(0.1) : .black.opacity(0.01))
+            .environment(\.colorScheme, .dark)
+            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(Color.black.opacity(0.6), lineWidth: 0.5)
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .stroke(destructive ? Color.red.opacity(0.2) : Color.white.opacity(0.2), lineWidth: 0.8)
+                    .padding(0.6)
+            }
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+            .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 3)
+            // Using gestures for immediate press response
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        if !isPressed {
+                            isPressed = true
+                        }
+                    }
+                    .onEnded { _ in
+                        isPressed = false
+                        action()
+                    }
             )
-            .shadow(color: Color.black.opacity(configuration.isPressed ? 0.01 : 0.03),
-                   radius: configuration.isPressed ? 1 : 3)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
-    }
-    
-    func foregroundColor(_ configuration: Configuration) -> Color {
-        switch style {
-        case .standard:
-            return configuration.isPressed ? .primary.opacity(0.7) : .primary
-        case .destructive:
-            return configuration.isPressed ? .red.opacity(0.7) : .red
-        }
-    }
-    
-    func strokeColor(_ configuration: Configuration) -> Color {
-        switch style {
-        case .standard:
-            return .white.opacity(configuration.isPressed ? 0.05 : 0.1)
-        case .destructive:
-            return .red.opacity(configuration.isPressed ? 0.1 : 0.2)
-        }
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded {
+                        // This is needed to handle tap events properly
+                        // The action is already called in the DragGesture.onEnded
+                    }
+            )
     }
 }
