@@ -1,11 +1,3 @@
-//
-//  SettingsView.swift
-//  loook
-//
-//  Created by David Noé on 04.05.2025.
-//
-
-
 import SwiftUI
 
 struct SettingsView: View {
@@ -13,6 +5,7 @@ struct SettingsView: View {
     @Binding var isPresented: Bool
     @State private var selectedTab = 0
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.controlActiveState) private var controlActiveState
     
     var body: some View {
         VStack(spacing: 12) {
@@ -77,18 +70,53 @@ struct SettingsView: View {
                             }
                             .padding(.bottom, 2)
                             
-                            SettingsSlider(
-                                title: "Blink",
-                                value: $reminderManager.blinkReminderInterval,
-                                range: 15...600,
-                                step: reminderManager.blinkReminderInterval < 60 ? 15 : 60,
-                                formatter: { value in
-                                    value < 60 ? "\(Int(value))s" : "\(Int(value/60))m"
+                            // Enhanced Blink slider with seconds/minutes handling
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    Text("Blink")
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                                        .foregroundStyle(.primary)
+                                    
+                                    Spacer()
+                                    
+                                    Text(reminderManager.blinkReminderInterval < 60 ?
+                                         "\(Int(reminderManager.blinkReminderInterval))s" :
+                                         "\(Int(reminderManager.blinkReminderInterval/60))m")
+                                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                                        .foregroundStyle(.secondary)
+                                        .frame(minWidth: 40, alignment: .trailing)
                                 }
-                            )
-                            .onChange(of: reminderManager.blinkReminderInterval) { _ in
-                                reminderManager.startTimers()
-                                reminderManager.resetPopups()
+                                
+                                HStack(spacing: 8) {
+                                    // Time segment selection
+                                    Picker("", selection: Binding(
+                                        get: { reminderManager.blinkReminderInterval < 60 ? 0 : 1 },
+                                        set: { newValue in
+                                            if newValue == 0 && reminderManager.blinkReminderInterval >= 60 {
+                                                reminderManager.blinkReminderInterval = 45 // Convert to seconds
+                                            } else if newValue == 1 && reminderManager.blinkReminderInterval < 60 {
+                                                reminderManager.blinkReminderInterval = 60 // Convert to minutes
+                                            }
+                                        }
+                                    )) {
+                                        Text("Seconds").tag(0)
+                                        Text("Minutes").tag(1)
+                                    }
+                                    .pickerStyle(.segmented)
+                                    .labelsHidden()
+                                    .frame(width: 130)
+                                    
+                                    // Dynamic slider based on selected unit
+                                    Slider(
+                                        value: $reminderManager.blinkReminderInterval,
+                                        in: reminderManager.blinkReminderInterval < 60 ? 15...59 : 60...600,
+                                        step: reminderManager.blinkReminderInterval < 60 ? 5 : 60
+                                    )
+                                }
+                                .onChange(of: reminderManager.blinkReminderInterval) { _ in
+                                    reminderManager.startTimers()
+                                    reminderManager.resetPopups()
+                                }
                             }
                             
                             SettingsSlider(
@@ -233,8 +261,10 @@ struct SettingsToggle: View {
             Text(title)
                 .font(.system(size: 14, weight: .medium, design: .rounded))
                 .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
         }
-        .toggleStyle(SwitchToggleStyle(tint: Color.blue))
+        .toggleStyle(SwitchToggleStyle())
     }
 }
 
@@ -261,7 +291,8 @@ struct SettingsSlider: View {
             }
             
             Slider(value: $value, in: range, step: step)
-                .tint(.blue)
+                // Use the system accent color for dark mode compatibility
+                .tint(nil) // This uses the default system slider tint color
         }
     }
 }
@@ -271,6 +302,7 @@ struct PreviewButton: View {
     var icon: String
     var action: () -> Void
     @State private var isPressed = false
+    //@Environment(\.accentColor) private var accentColor
     
     var body: some View {
         Button {
@@ -279,7 +311,7 @@ struct PreviewButton: View {
             VStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.white) // Use system accent color
                     .frame(height: 18)
                 
                 Text(title)
@@ -344,7 +376,6 @@ struct ActionButton: View {
         )
     }
     
-    // Break up the complex expression into computed properties
     private var backgroundRect: some View {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .fill(backgroundColor)
