@@ -75,6 +75,10 @@ class ReminderManager: ObservableObject {
     @Published var blinkReminderInterval: TimeInterval = 60 // 1 minute
     @Published var distanceFocusReminderInterval: TimeInterval = 20 * 60 // 20 minutes
     
+    @Published var isBlinkReminderEnabled: Bool = true
+    @Published var isPostureReminderEnabled: Bool = true
+    @Published var isDistanceFocusReminderEnabled: Bool = true
+    
     @Published var isRemindersEnabled = true
     @AppStorage("launchAtLogin") var launchAtLogin = false
     
@@ -92,22 +96,28 @@ class ReminderManager: ObservableObject {
         stopAllTimers()
         
         if isRemindersEnabled {
-            // Posture reminder timer
-            postureTimer = Timer.scheduledTimer(withTimeInterval: postureReminderInterval, repeats: true) { [weak self] _ in
-                guard let self = self else { return }
-                self.queueReminder(.posture)
+            // Posture reminder timer - only if enabled
+            if isPostureReminderEnabled {
+                postureTimer = Timer.scheduledTimer(withTimeInterval: postureReminderInterval, repeats: true) { [weak self] _ in
+                    guard let self = self else { return }
+                    self.queueReminder(.posture)
+                }
             }
             
-            // Blink reminder timer
-            blinkTimer = Timer.scheduledTimer(withTimeInterval: blinkReminderInterval, repeats: true) { [weak self] _ in
-                guard let self = self else { return }
-                self.queueReminder(.blink)
+            // Blink reminder timer - only if enabled
+            if isBlinkReminderEnabled {
+                blinkTimer = Timer.scheduledTimer(withTimeInterval: blinkReminderInterval, repeats: true) { [weak self] _ in
+                    guard let self = self else { return }
+                    self.queueReminder(.blink)
+                }
             }
             
-            // Distance Focus reminder timer (formerly 20/20/20 rule)
-            distanceFocusTimer = Timer.scheduledTimer(withTimeInterval: distanceFocusReminderInterval, repeats: true) { [weak self] _ in
-                guard let self = self else { return }
-                self.queueReminder(.distanceFocus)
+            // Distance Focus reminder timer - only if enabled
+            if isDistanceFocusReminderEnabled {
+                distanceFocusTimer = Timer.scheduledTimer(withTimeInterval: distanceFocusReminderInterval, repeats: true) { [weak self] _ in
+                    guard let self = self else { return }
+                    self.queueReminder(.distanceFocus)
+                }
             }
         }
     }
