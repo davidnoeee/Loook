@@ -4,9 +4,9 @@ struct SettingsView: View {
     @ObservedObject var reminderManager: ReminderManager
     @Binding var isPresented: Bool
     
-    // Muted colors defined as separate variables
-    private let mutedBlue = Color(red: 0.35, green: 0.55, blue: 0.85)
-    private let mutedRed = Color(red: 0.8, green: 0.35, blue: 0.35)
+    // System colors that adapt to light/dark mode
+    private let accentBlue = Color.blue
+    private let accentRed = Color.red
     
     var body: some View {
         VStack(spacing: 12) {
@@ -27,8 +27,8 @@ struct SettingsView: View {
                     // App Controls Card
                     AppControlsCard(
                         reminderManager: reminderManager,
-                        mutedBlue: mutedBlue,
-                        mutedRed: mutedRed
+                        accentBlue: accentBlue,
+                        accentRed: accentRed
                     )
                 }
                 .padding(.horizontal, 12)
@@ -146,11 +146,8 @@ struct BlinkReminderSection: View {
                      "\(Int(reminderManager.blinkReminderInterval))s" :
                      "\(Int(reminderManager.blinkReminderInterval/60))m")
                     .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundStyle(
-                        reminderManager.isBlinkReminderEnabled
-                            ? AnyShapeStyle(.secondary)
-                            : AnyShapeStyle(.secondary.opacity(0.5))
-                    )
+                    .foregroundStyle(.secondary)
+                    .opacity(reminderManager.isBlinkReminderEnabled ? 1.0 : 0.5)
                     .frame(minWidth: 40, alignment: .trailing)
                     .contentTransition(.numericText())
                     .animation(.spring, value: reminderManager.blinkReminderInterval)
@@ -221,11 +218,8 @@ struct PostureReminderSection: View {
                 
                 Text("\(Int(reminderManager.postureReminderInterval/60))m")
                     .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundStyle(
-                        reminderManager.isPostureReminderEnabled
-                            ? AnyShapeStyle(.secondary)
-                            : AnyShapeStyle(.secondary.opacity(0.5))
-                    )
+                    .foregroundStyle(.secondary)
+                    .opacity(reminderManager.isPostureReminderEnabled ? 1.0 : 0.5)
                     .frame(minWidth: 40, alignment: .trailing)
                     .contentTransition(.numericText())
                     .animation(.spring, value: reminderManager.postureReminderInterval)
@@ -266,11 +260,8 @@ struct LookAwayReminderSection: View {
                 
                 Text("\(Int(reminderManager.distanceFocusReminderInterval/60))m")
                     .font(.system(size: 14, weight: .regular, design: .rounded))
-                    .foregroundStyle(
-                        reminderManager.isDistanceFocusReminderEnabled
-                            ? AnyShapeStyle(.secondary)
-                            : AnyShapeStyle(.secondary.opacity(0.5))
-                    )
+                    .foregroundStyle(.secondary)
+                    .opacity(reminderManager.isDistanceFocusReminderEnabled ? 1.0 : 0.5)
                     .frame(minWidth: 40, alignment: .trailing)
                     .contentTransition(.numericText())
                     .animation(.spring, value: reminderManager.distanceFocusReminderInterval)
@@ -341,8 +332,8 @@ struct PreviewCard: View {
 // MARK: - App Controls Card
 struct AppControlsCard: View {
     @ObservedObject var reminderManager: ReminderManager
-    let mutedBlue: Color
-    let mutedRed: Color
+    let accentBlue: Color
+    let accentRed: Color
     
     var body: some View {
         SettingsCard {
@@ -359,7 +350,7 @@ struct AppControlsCard: View {
                     ActionButton(
                         title: "Feedback",
                         icon: "megaphone.fill",
-                        customColor: mutedBlue,
+                        customColor: accentBlue,
                         action: {
                             if let url = URL(string: "mailto:contact@ileb.zip?subject=Loook%20Feedback:%20") {
                                 NSWorkspace.shared.open(url)
@@ -370,7 +361,7 @@ struct AppControlsCard: View {
                     ActionButton(
                         title: "Quit App",
                         icon: "rectangle.portrait.and.arrow.right",
-                        customColor: mutedRed,
+                        customColor: accentRed,
                         destructive: true,
                         action: {
                             NSApplication.shared.terminate(nil)
@@ -407,8 +398,6 @@ struct SliderWithPreservedTint: View {
     
     var body: some View {
         Slider(value: $value, in: range, step: step)
-            //.tint(nil)
-            //.disabled(isDisabled)
             .opacity(isDisabled ? 0.5 : 1)
     }
 }
@@ -431,11 +420,11 @@ struct SettingsCard<Content: View>: View {
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.black.opacity(0.28), lineWidth: 0.5) // Increased opacity by 0.08
+                    .stroke(Color.primary.opacity(0.15), lineWidth: 0.5)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 0.5) // Increased opacity by 0.05
+                    .stroke(Color.secondary.opacity(0.15), lineWidth: 0.5)
                     .padding(0.5)
             }
             .shadow(color: .black.opacity(0.15), radius: 3, x: 0, y: 2)
@@ -463,8 +452,8 @@ struct AnimatedSegmentPicker: View {
                     Text(options[index])
                         .font(.system(size: 12, weight: selection == index ? .medium : .regular))
                         .foregroundStyle(
-                            isDisabled ? .gray.opacity(0.5) :
-                                (selection == index ? .white : .white.opacity(0.7))
+                            isDisabled ? Color.secondary.opacity(0.5) :
+                                (selection == index ? .white : Color.secondary)
                         )
                         .padding(.vertical, 4)
                         .frame(maxWidth: .infinity)
@@ -482,11 +471,11 @@ struct AnimatedSegmentPicker: View {
         .padding(2)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(Color.white.opacity(isDisabled ? 0.04 : 0.08))
+                .fill(Color.secondary.opacity(isDisabled ? 0.04 : 0.08))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.white.opacity(isDisabled ? 0.1 : 0.15), lineWidth: 0.5) // Increased opacity by 0.05
+                .stroke(Color.secondary.opacity(isDisabled ? 0.1 : 0.15), lineWidth: 0.5)
         )
         .opacity(isDisabled ? 0.7 : 1)
         .animation(.spring(response: 0.3), value: isDisabled) // Animate disabled state changes
@@ -525,26 +514,26 @@ struct PreviewButton: View {
             VStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(isDisabled ? .gray.opacity(0.5) : Color.accentColor)
+                    .foregroundStyle(isDisabled ? Color.secondary.opacity(0.5) : Color.accentColor)
                     .frame(height: 18)
                 
                 Text(title)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(isDisabled ? .gray.opacity(0.5) : .primary)
+                    .foregroundStyle(isDisabled ? Color.secondary.opacity(0.5) : .primary)
             }
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(
-                        isDisabled ? Color.black.opacity(0.15) :
-                            (isPressed ? Color.white.opacity(0.12) : Color.white.opacity(0.05))
+                        isDisabled ? Color.secondary.opacity(0.15) :
+                            (isPressed ? Color.secondary.opacity(0.12) : Color.secondary.opacity(0.05))
                     )
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(
-                        isDisabled ? Color.gray.opacity(0.15) : Color.white.opacity(0.15), // Increased opacity by 0.05
+                        isDisabled ? Color.secondary.opacity(0.15) : Color.secondary.opacity(0.15),
                         lineWidth: 0.5
                     )
             )
@@ -553,8 +542,6 @@ struct PreviewButton: View {
         .contentShape(Rectangle())
         .disabled(isDisabled)
         .scaleEffect((isPressed && !isDisabled) ? 0.96 : 1)
-        // Add animations for scale when disabled state changes
-        //.scaleEffect(isDisabled ? 1 : 1)
         .animation(.spring(response: 0.3), value: isDisabled)
         .animation(.spring(response: 0.2, dampingFraction: 0.7), value: isPressed)
         .gesture(
@@ -592,7 +579,7 @@ struct ActionButton: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(
                             customColor != nil ? customColor! :
-                            destructive ? Color.red.opacity(0.9) : Color.primary
+                            destructive ? Color.red : Color.primary
                         )
                 }
                 
@@ -600,7 +587,7 @@ struct ActionButton: View {
                     .font(.system(size: 13.5, weight: .medium, design: .rounded))
                     .foregroundStyle(
                         customColor != nil ? customColor! :
-                        destructive ? Color.red.opacity(0.9) : Color.primary
+                        destructive ? Color.red : Color.primary
                     )
             }
             .padding(.vertical, 8)
@@ -633,15 +620,15 @@ struct ActionButton: View {
         } else if destructive {
             return isPressed ? Color.red.opacity(0.15) : Color.red.opacity(0.07)
         } else {
-            return isPressed ? Color.white.opacity(0.12) : Color.white.opacity(0.05)
+            return isPressed ? Color.secondary.opacity(0.12) : Color.secondary.opacity(0.05)
         }
     }
     
     private var overlayRect: some View {
         RoundedRectangle(cornerRadius: 8, style: .continuous)
             .stroke(
-                customColor != nil ? customColor!.opacity(0.25) : // Increased opacity by 0.05
-                destructive ? Color.red.opacity(0.25) : Color.white.opacity(0.15), // Increased opacity by 0.05
+                customColor != nil ? customColor!.opacity(0.25) :
+                destructive ? Color.red.opacity(0.25) : Color.secondary.opacity(0.15),
                 lineWidth: 0.5
             )
     }
