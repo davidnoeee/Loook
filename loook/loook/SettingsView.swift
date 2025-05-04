@@ -436,7 +436,7 @@ struct SettingsCard<Content: View>: View {
             .padding(.horizontal, 12)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Material.regular)
+                    .fill(Material.ultraThin)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
