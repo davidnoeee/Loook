@@ -266,6 +266,9 @@ struct PostureReminderView: View {
     @State private var arrowBounce: CGFloat = 0
     @State private var arrowBlur: CGFloat = 5
     
+    // To prevent multiple exit animations
+    @State private var isAnimatingOut: Bool = false
+    
     var body: some View {
         ZStack {
             // Pill background that can morph to circle
@@ -311,7 +314,7 @@ struct PostureReminderView: View {
                     }
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                     .scaleEffect(circleScale)
-                    .blur(radius: frameBlur)
+                    .blur(radius: circleBlur)
                     .opacity(circleOpacity)
                 
                 // Arrow with bouncy animation
@@ -327,6 +330,11 @@ struct PostureReminderView: View {
         }
         .environment(\.colorScheme, .dark)
         .onAppear(perform: startAnimation)
+        .onChange(of: isShowing) { newValue in
+            if !newValue && !isAnimatingOut {
+                startExitAnimation()
+            }
+        }
     }
     
     private func startAnimation() {
@@ -339,7 +347,6 @@ struct PostureReminderView: View {
             frameBlur = 5
             circleBlur = 5
             arrowBlur = 0
-            // Move up to keep top aligned
         }
         
         // Frame settles with less blur
@@ -348,8 +355,6 @@ struct PostureReminderView: View {
                 frameScale = 1.0
                 frameBlur = 0
                 circleBlur = 0
-                //frameHeight = 130
-                //frameOffsetY = 5
             }
         }
         
@@ -375,8 +380,6 @@ struct PostureReminderView: View {
                     circleOffset = -20
                 }
             }
-            
-            
         }
         
         // 3. Arrow appears and does a playful bounce
@@ -414,58 +417,68 @@ struct PostureReminderView: View {
             }
         }
         
-        // 4. Playful exit animation - pill morphs into circle
+        // 4. Automatic exit animation after delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            // First a slight "prepare to exit" animation
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                frameScale = 1.05
-                circleScale = 1.05
-                arrowScale = 1.05
-                frameBlur = 2
+            startExitAnimation()
+        }
+    }
+    
+    private func startExitAnimation() {
+        // Prevent multiple exit animations
+        if isAnimatingOut {
+            return
+        }
+        isAnimatingOut = true
+        
+        // CONSISTENT EXIT ANIMATION PATTERN
+        
+        // 1. First a slight "prepare to exit" animation
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            frameScale = 1.05
+            circleScale = 1.05
+            arrowScale = 1.05
+            frameBlur = 2
+        }
+        
+        // 2. Content elements exit first
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            // First hide the arrow
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                arrowScale = 0.6
+                arrowOpacity = 0
+                arrowBlur = 5
             }
             
-            // Then begin the playful exit - pill starts morphing to circle
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    // Morph pill to circle by reducing height and adjusting position
-                    frameHeight = 80
-                    frameOffsetY = 20 // Move up to keep top aligned
+            // Then start circle exit
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                    circleScale = 0.7
+                    circleOpacity = 0
+                    circleBlur = 8
+                    frameHeight = 90 // Start morphing pill back to smaller
+                    frameOffsetY = 10
                     circleOffset = 20
-                    
-                    
-                    // Add blur as transition begins
-                    frameBlur = 3
-                    circleBlur = 3
-                    arrowBlur = 3
-                    circleOpacity = 0.8
-                    circleScale = 0.8
-                    frameScale = 0.85
-                    arrowScale = 0.85
                 }
                 
-                // Final bounce-out and fade with increasing blur
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.23) {
-                    withAnimation(.easeOut(duration: 0.2)) {
-                        // Everything scales slightly up before disappearing
-                        frameScale = 0.6
-                        circleScale = 0.1
-                        arrowScale = 0.1
-                        
-                        // Move everything up slightly
-                        frameOffsetY = frameOffsetY - 5
-                        circleOffset = circleOffset - 5
-                        
-                        // Then quickly fade with heavy blur
-                        frameBlur = 6
-                        circleBlur = 6
-                        frameOpacity = 0
-                        circleOpacity = 0
-                        arrowOpacity = 0
-                        arrowBlur = 6
+                // 3. Finally the frame disappears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    // First frame changes with bounce
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                        frameScale = 0.8
+                        frameBlur = 10
                     }
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                        isShowing = false
+                    // Then final fade out
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            frameOpacity = 0
+                            frameBlur = 20
+                        }
+                        
+                        // Notify after animations complete
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isShowing = false
+                        }
                     }
                 }
             }
@@ -497,6 +510,9 @@ struct BlinkReminderView: View {
     @State private var eyeBounce: CGFloat = 0
     
     @State private var eyeColor: Color = .black.opacity(1)
+    
+    // To prevent multiple exit animations
+    @State private var isAnimatingOut: Bool = false
     
     var body: some View {
         ZStack {
@@ -551,6 +567,11 @@ struct BlinkReminderView: View {
         }
         .environment(\.colorScheme, .dark)
         .onAppear(perform: startAnimation)
+        .onChange(of: isShowing) { newValue in
+            if !newValue && !isAnimatingOut {
+                startExitAnimation()
+            }
+        }
     }
     
     private func startAnimation() {
@@ -631,98 +652,67 @@ struct BlinkReminderView: View {
                             }
                         }
                         
-                        // ==== EXIT ANIMATION NESTED INSIDE MAIN ANIMATION SEQUENCE ====
+                        // Exit animation after delay
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                            // Reset to steady state
-                            /*
-                            frameScale = 1.0
-                            circleScale = 1.0
-                            eyeScale = 1.0
-                            circleColor = .white
-                            eyeColor = .black
-                            frameBlur = 0
-                            circleBlur = 0
-                            eyeBlur = 0
-                             */
-                            
-                            frameOpacity = 1
-                            circleOpacity = 1
-                            eyeOpacity = 1
-                            
-                            // Wait a tiny bit to ensure reset is applied
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                // Prepare to exit - slight pulse
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                                    frameScale = 1.03
-                                    circleScale = 1.09
-                                    eyeScale = 1.05
-                                    
-                                    frameOpacity = 1
-                                    circleOpacity = 1
-                                    eyeOpacity = 1
-                                }
-                                
-                                // Begin exit animation
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    // Eye disappears first
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                        eyeScale = 0.5
-                                        eyeOpacity = 0.5
-                                        eyeBlur = 2
-                                        frameBlur = 2
-                                        circleBlur = 2
-                                        
-                                        frameOpacity = 1
-                                        circleOpacity = 1
-                                    }
-                                    
-                                    // Then circle shrinks and fades
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                                        // Circle animations
-                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
-                                            circleScale = 0.1
-                                            frameScale = 0.6
-                                            //frameOpacity = 0
-                                            eyeOpacity = 0.5
-                                            circleBlur = 8
-                                            frameBlur = 10
-                                        }
-                                        
-                                        
-                                        withAnimation(.easeOut(duration: 0.35)) {
-                                            circleOpacity = 0
-                                            circleBlur = 12
-                                            frameOpacity = 0
-                                        }
-                                        
-                                        // Eye continues to fade
-                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                            eyeScale = 0.3
-                                            eyeOpacity = 0
-                                            eyeBlur = 10
-                                        }
-                                        
-                                        /*
-                                        // Finally the frame disappears
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                            // Frame scales down and fades
-                                            withAnimation(.easeOut(duration: 0.35)) {
-                                                frameScale = 0.6
-                                                frameOpacity = 0
-                                                frameBlur = 8
-                                                circleScale = 0.3
-                                                circleOpacity = 0
-                                                circleBlur = 8
-                                            } */
-                                            
-                                            // Set isShowing to false after animation completes
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                                isShowing = false
-                                            }
-                                        }
-                                    
-                                }
-                            }
+                            startExitAnimation()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func startExitAnimation() {
+        // Prevent multiple exit animations
+        if isAnimatingOut {
+            return
+        }
+        isAnimatingOut = true
+        
+        // CONSISTENT EXIT ANIMATION PATTERN
+        
+        // 1. First prepare to exit - slight pulse
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            frameScale = 1.03
+            circleScale = 1.09
+            eyeScale = 1.05
+            frameBlur = 1
+        }
+        
+        // 2. Eye disappears first
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                eyeScale = 0.6
+                eyeOpacity = 0
+                eyeBlur = 5
+            }
+            
+            // 3. Then inner circle animates out
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                    circleScale = 0.7
+                    circleOpacity = 0
+                    circleBlur = 8
+                }
+                
+                // 4. Finally the frame disappears
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    // First scale down with blur
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                        frameScale = 0.8
+                        frameBlur = 10
+                    }
+                    
+                    // Then final fade out
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            frameOpacity = 0
+                            frameBlur = 20
+                        }
+                        
+                        // Set isShowing to false after animation completes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isShowing = false
                         }
                     }
                 }
@@ -730,9 +720,6 @@ struct BlinkReminderView: View {
         }
     }
 }
-
-// Enhanced Countdown Reminder View with fluid animations and completion transformation
-// Enhanced Countdown Reminder View with fluid animations and completion transformation
 // Enhanced Countdown Reminder View with fluid animations and completion transformation
 struct CountdownReminderView: View {
     @Binding var isShowing: Bool
@@ -873,8 +860,12 @@ struct CountdownReminderView: View {
         .onChange(of: isShowing) { newValue in
             // If parent tries to hide this view while we're showing completion,
             // make sure our own animations finish properly
-            if !newValue && isShowingCompletion && !isAnimatingOut {
-                startExitAnimationAfterCompletion()
+            if !newValue && !isAnimatingOut {
+                if isShowingCompletion {
+                    startExitAnimationAfterCompletion()
+                } else {
+                    startExitAnimation()
+                }
             }
         }
         .onHover { hovering in
@@ -942,7 +933,7 @@ struct CountdownReminderView: View {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             frameBlur = 1.2 // Very subtle blur during animation
             frameHeight = 58
-            frameOffset = 1
+            frameOffset = 1.5
         }
         
         withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
@@ -1015,23 +1006,10 @@ struct CountdownReminderView: View {
                             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                                 checkmarkScale = 1.0
                             }
-                            
-                            // Subtle pulse animation for checkmark after settling
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                withAnimation(.spring(response: 0.6, dampingFraction: 0.65)) {
-                                    checkmarkScale = 1.08
-                                }
-                                
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                                        checkmarkScale = 1.0
-                                    }
-                                }
-                            }
                         }
                         
-                        // 6. Wait for longer display time (2 seconds) then begin exit animation
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        // 6. Wait for a moment then begin exit animation (no pulse animation)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                             startExitAnimationAfterCompletion()
                         }
                     }
@@ -1047,54 +1025,49 @@ struct CountdownReminderView: View {
         }
         isAnimatingOut = true
         
+        // CONSISTENT EXIT ANIMATION PATTERN
+        
         // 1. First prepare for exit with slight scale up
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             frameScale = 1.03
             innerCircleScale = 1.05
             checkmarkScale = 1.03
+            frameBlur = 1
         }
         
-        // 2. First animate out the checkmark with proper effects
+        // 2. First animate out the checkmark
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
-                checkmarkScale = 0.7
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                checkmarkScale = 0.6
                 checkmarkOpacity = 0
                 checkmarkBlur = 5
             }
             
             // 3. Then animate out the inner circle with delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    innerCircleScale = 0.6
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                    innerCircleScale = 0.7
                     innerCircleOpacity = 0
                     innerCircleBlur = 8
                 }
                 
-                // 4. Finally, animate out the frame with staggered effects
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    // First a little prep animation
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
-                        frameScale = 1.05
-                        frameBlur = 3
+                // 4. Finally, animate out the frame
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    // First scale down with blur
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                        frameScale = 0.8
+                        frameBlur = 10
                     }
                     
-                    // Then scale down and fade with increasing blur
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.65)) {
-                            frameScale = 0.7
-                            frameBlur = 15
-                        }
-                        
-                        // Final fade out with separate animation
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            withAnimation(.easeOut(duration: 0.2)) {
-                                frameOpacity = 0
-                                frameBlur = 25
-                            }
+                    // Then final fade out
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            frameOpacity = 0
+                            frameBlur = 20
                         }
                         
                         // Notify after animations complete
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             isShowing = false
                             NotificationCenter.default.post(name: NSNotification.Name("CountdownDismissed"), object: nil)
                         }
@@ -1111,11 +1084,7 @@ struct CountdownReminderView: View {
         }
         isAnimatingOut = true
         
-        // Used for manual dismissal (x button)
-        if isShowingCompletion {
-            startExitAnimationAfterCompletion()
-            return
-        }
+        // CONSISTENT EXIT ANIMATION PATTERN
         
         // 1. First make the text bounce out with blur
         withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
@@ -1124,31 +1093,31 @@ struct CountdownReminderView: View {
             textBlur = 5
         }
         
-        // 2. Then animate the frame with staggered effects
+        // 2. Then animate the frame
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             // First a little prep bounce
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                 frameScale = 1.05
                 frameBlur = 2
             }
             
             // Then scale down with blur
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                     frameScale = 0.8
-                    frameBlur = 15
+                    frameBlur = 10
                 }
                 
                 // Final fade out as separate animation
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     withAnimation(.easeOut(duration: 0.2)) {
                         frameOpacity = 0
-                        frameBlur = 25
+                        frameBlur = 20
                     }
                 }
                 
                 // Notify after animations complete
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     isShowing = false
                     NotificationCenter.default.post(name: NSNotification.Name("CountdownDismissed"), object: nil)
                 }
