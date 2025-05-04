@@ -1125,162 +1125,144 @@ struct CountdownReminderView: View {
         }
     }
 }
-// Updated Settings View with more subtle strokes
+
+/*
 struct SettingsView: View {
     @ObservedObject var reminderManager: ReminderManager
     @Binding var isPresented: Bool
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 8) {
-                // Header
-                Text("Settings")
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, 8)
+        VStack {
+            Section {
+                Toggle("Enable Reminders", isOn: $reminderManager.isRemindersEnabled)
+                    .onChange(of: reminderManager.isRemindersEnabled) { _ in
+                        reminderManager.startTimers()
+                    }
                 
-                // Settings content
-                VStack(alignment: .leading, spacing: 8) {
-                    // Toggle section
-                    SettingsCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            SettingsToggle(title: "Enable Reminders", isOn: $reminderManager.isRemindersEnabled)
-                                .onChange(of: reminderManager.isRemindersEnabled) { _ in
-                                    reminderManager.startTimers()
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            SettingsToggle(title: "Launch at Login", isOn: $reminderManager.launchAtLogin)
-                                .onChange(of: reminderManager.launchAtLogin) { _ in
-                                    reminderManager.toggleLaunchAtLogin()
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                Toggle("Launch at Login", isOn: $reminderManager.launchAtLogin)
+                    .onChange(of: reminderManager.launchAtLogin) { _ in
+                        reminderManager.toggleLaunchAtLogin()
                     }
-                    
-                    // MARK: TEST BUTTONS SECTION
-                    // Test buttons section
-                    SettingsCard {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Preview Animations")
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                .foregroundColor(.secondary)
-                            
-                            VStack(spacing: 8) {
-                                
-                                ilebButton(text: "Blink") {
-                                    reminderManager.testBlinkReminder()
-                                }
-                                ilebButton(text: "Posture") {
-                                    reminderManager.testPostureReminder()
-                                }
-                                
-                                ilebButton(text: "Distance Focus") {
-                                    reminderManager.testDistanceFocusReminder()
-                                }
-                            }
-                        }
+            } header: {
+                Text("General")
+            }
+            
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Blink")
+                        Spacer()
+                        Text(reminderManager.blinkReminderInterval < 60 ?
+                             "\(Int(reminderManager.blinkReminderInterval))s" :
+                             "\(Int(reminderManager.blinkReminderInterval/60)) min")
+                            .foregroundColor(.secondary)
                     }
-                    
-                    
-                    // Sliders section
-                    SettingsCard {
-                        VStack(alignment: .leading, spacing: 18) {
-                            Text("Reminder Intervals")
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                .foregroundColor(.secondary)
-                            
-                            // Blink reminder: 15sec-10min with variable steps
-                            SettingsSlider(
-                                title: "Blink Reminder",
-                                value: $reminderManager.blinkReminderInterval,
-                                range: 15...600, // 15sec-10min
-                                step: reminderManager.blinkReminderInterval < 60 ? 15 : 60, // 15sec steps until 1min, then 1min steps
-                                formatter: {
-                                    let value = Int($0)
-                                    return value < 60 ? "\(value)s" : "\(value/60) min"
-                                }
-                            )
-                            .onChange(of: reminderManager.blinkReminderInterval) { _ in
-                                reminderManager.startTimers()
-                                reminderManager.resetPopups()
-                            }
-                            
-                            // Posture reminder: 5-30 minutes in 5-minute steps
-                            SettingsSlider(
-                                title: "Posture Reminder",
-                                value: $reminderManager.postureReminderInterval,
-                                range: 300...1800, // 5-30 minutes
-                                step: 300, // 5 minute steps
-                                formatter: { "\(Int($0/60)) min" }
-                            )
-                            .onChange(of: reminderManager.postureReminderInterval) { _ in
-                                reminderManager.startTimers()
-                                reminderManager.resetPopups()
-                            }
-                            
-                            // Distance Focus reminder: 5-30 minutes in 5-minute steps
-                            SettingsSlider(
-                                title: "Distance Focus",
-                                value: $reminderManager.distanceFocusReminderInterval,
-                                range: 300...1800, // 5-30 minutes
-                                step: 300, // 5 minute steps
-                                formatter: { "\(Int($0/60)) min" }
-                            )
-                            .onChange(of: reminderManager.distanceFocusReminderInterval) { _ in
-                                reminderManager.startTimers()
-                                reminderManager.resetPopups()
-                            }
-                        }
-                    }
-                    
-                    // Reset & Quit section
-                    SettingsCard {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("App Controls")
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                .foregroundColor(.secondary)
-                            
-                            VStack(spacing: 8) {
-                                ilebButton(text: "Reset Reminders") {
-                                    reminderManager.resetPopups()
-                                }
-                                
-                                ilebButton(text: "Quit App", destructive: false) {
-                                    NSApplication.shared.terminate(nil)
-                                }
-                            }
-                        }
+                    Slider(
+                        value: $reminderManager.blinkReminderInterval,
+                        in: 15...600,
+                        step: reminderManager.blinkReminderInterval < 60 ? 15 : 60
+                    )
+                    .onChange(of: reminderManager.blinkReminderInterval) { _ in
+                        reminderManager.startTimers()
+                        reminderManager.resetPopups()
                     }
                 }
-                .padding(.horizontal, 8)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Posture")
+                        Spacer()
+                        Text("\(Int(reminderManager.postureReminderInterval/60)) min")
+                            .foregroundColor(.secondary)
+                    }
+                    Slider(
+                        value: $reminderManager.postureReminderInterval,
+                        in: 300...1800,
+                        step: 300
+                    )
+                    .onChange(of: reminderManager.postureReminderInterval) { _ in
+                        reminderManager.startTimers()
+                        reminderManager.resetPopups()
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Distance Focus")
+                        Spacer()
+                        Text("\(Int(reminderManager.distanceFocusReminderInterval/60)) min")
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Slider(
+                            value: $reminderManager.distanceFocusReminderInterval,
+                            in: 300...1800,
+                            step: 300
+                        )
+                        .frame(maxWidth: .infinity)
+                    }
+                    .onChange(of: reminderManager.distanceFocusReminderInterval) { _ in
+                        reminderManager.startTimers()
+                        reminderManager.resetPopups()
+                    }
+                }
+            } header: {
+                Text("Reminder Intervals")
             }
-            .padding(.vertical, 8)
+            
+            Section {
+                HStack(spacing: 3) {
+                    Button("Blink") {
+                        reminderManager.testBlinkReminder()
+                    }
+                    
+                    Button("Posture") {
+                        reminderManager.testPostureReminder()
+                    }
+                    
+                    Button("Distance Focus") {
+                        reminderManager.testDistanceFocusReminder()
+                    }
+                    
+                    Spacer()
+                }
+            } header: {
+                Text("Preview Animations")
+            }
+            
+            Section {
+                HStack(spacing: 3) {
+                    Button("Reset Reminders") {
+                        reminderManager.resetPopups()
+                    }
+                    
+                    Button("Quit App", role: .destructive) {
+                        NSApplication.shared.terminate(nil)
+                    }
+                    
+                    Spacer()
+                }
+            } header: {
+                Text("App Controls")
+            }
         }
-        .frame(width: 320)
-        /*
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Material.ultraThinMaterial)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.black.opacity(0.6), lineWidth: 0.5)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.white.opacity(0.2), lineWidth: 0.8)
-                .padding(0.6)
-        }
-         */
-        .fixedSize(horizontal: false, vertical: true) // This is key for making it size to content
-        .environment(\.colorScheme, .dark)
-        //.shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 3)
+        .formStyle(.grouped)
+        //.padding(.all, 8) // Reduce overall padding to 8
+        .frame(width: 310)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 
+// Extension to reduce section spacing
+extension FormStyle where Self == GroupedFormStyle {
+    static var groupedWithReducedSpacing: GroupedFormStyle {
+        let style = GroupedFormStyle()
+        return style
+    }
+}
+ */
+/*
 // Updated Design System Components with more subtle strokes
 struct SettingsCard<Content: View>: View {
     var content: Content
@@ -1354,6 +1336,8 @@ struct SettingsSlider: View {
         }
     }
 }
+ */
+ 
 
 // ilebButton - The original button style with new design elements
 struct ilebButton: View {
