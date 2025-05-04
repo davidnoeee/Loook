@@ -20,7 +20,7 @@ jobs:
       - name: Bump build number
         run: |
           cd loook
-          agvtool new-version -all
+          agvtool bump -all
 
       - name: Commit & push bumped version
         run: |
