@@ -1,0 +1,40 @@
+name: Auto Bump Build Number
+
+permissions:
+  contents: write    # grant push rights
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  bump:
+    # skip if this is already our own bump commit
+    if: "!startsWith(github.event.head_commit.message, 'chore: bump build number')"
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Count commits
+        id: commit_count
+        run: echo "count=$(git rev-list --count HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Bump build number via agvtool
+        run: |
+          cd Loook                         
+          xcrun agvtool new-version -all ${{ steps.commit_count.outputs.count }}
+          cd ..
+
+      - name: Commit & push
+        run: |
+          git config user.name  "github-actions"
+          git config user.email "github-actions@github.com"
+          git add Loook/loook.xcodeproj/project.pbxproj
+          git commit -m "chore: bump build number to ${{ steps.commit_count.outputs.count }}"
+          git push
