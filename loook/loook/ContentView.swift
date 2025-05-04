@@ -86,7 +86,7 @@ class ReminderManager: ObservableObject {
     // Queue system for reminders
     private var reminderQueue: [ReminderType] = []
     private enum ReminderType { case posture, blink, distanceFocus }
-    private var isShowingReminder: Bool = false
+    var isShowingReminder: Bool = false
     
     func startTimers() {
         stopAllTimers()
