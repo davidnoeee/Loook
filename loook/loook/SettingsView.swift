@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var reminderManager: ReminderManager
     @Binding var isPresented: Bool
+    @Environment(\.colorScheme) private var colorScheme
     
     // System colors that adapt to light/dark mode
     private let accentBlue = Color.blue
@@ -46,8 +47,6 @@ struct SettingsView: View {
         }
         .frame(width: 320)
         .fixedSize(horizontal: false, vertical: true)
-        //.background(Material.thin.opacity(0.95))
-        //.environment(\.colorScheme, .dark)
     }
 }
 
@@ -106,6 +105,7 @@ struct GeneralSettingsCard: View {
 // MARK: - Intervals Settings Card
 struct IntervalsSettingsCard: View {
     @ObservedObject var reminderManager: ReminderManager
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         SettingsCard {
@@ -122,12 +122,15 @@ struct IntervalsSettingsCard: View {
                 LookAwayReminderSection(reminderManager: reminderManager)
             }
         }
+        // This ensures the entire card gets refreshed when color scheme changes
+        .id("intervals-\(colorScheme)")
     }
 }
 
 // MARK: - Blink Reminder Section
 struct BlinkReminderSection: View {
     @ObservedObject var reminderManager: ReminderManager
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -174,12 +177,14 @@ struct BlinkReminderSection: View {
                 }
             }
         }
+        .id("blink-section-\(colorScheme)")
     }
 }
 
 // MARK: - Blink Segment Picker Helper
 struct BlinkSegmentPicker: View {
     @ObservedObject var reminderManager: ReminderManager
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         AnimatedSegmentPicker(
@@ -197,12 +202,14 @@ struct BlinkSegmentPicker: View {
             isDisabled: !reminderManager.isBlinkReminderEnabled
         )
         .frame(width: 120, height: 28)
+        .id("blink-segment-\(colorScheme)")
     }
 }
 
 // MARK: - Posture Reminder Section
 struct PostureReminderSection: View {
     @ObservedObject var reminderManager: ReminderManager
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -239,12 +246,14 @@ struct PostureReminderSection: View {
                 reminderManager.resetPopups()
             }
         }
+        .id("posture-section-\(colorScheme)")
     }
 }
 
 // MARK: - Look Away Reminder Section (Renamed from Distance Focus)
 struct LookAwayReminderSection: View {
     @ObservedObject var reminderManager: ReminderManager
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -281,6 +290,7 @@ struct LookAwayReminderSection: View {
                 reminderManager.resetPopups()
             }
         }
+        .id("lookaway-section-\(colorScheme)")
     }
 }
 
@@ -390,15 +400,25 @@ struct SectionHeader: View {
 }
 
 // MARK: - Slider with Preserved Tint for Dark Mode
+// MARK: - Slider with Preserved Tint for Dark Mode
 struct SliderWithPreservedTint: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
     let step: Double
     let isDisabled: Bool
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var sliderID = UUID()
     
     var body: some View {
         Slider(value: $value, in: range, step: step)
-            .opacity(isDisabled ? 0.5 : 1)
+            .disabled(isDisabled) // Apply disabled state first
+            // No tint modifier - let system handle it
+            .opacity(isDisabled ? 0.2 : 1)
+            .id("slider-\(colorScheme)-\(isDisabled)-\(sliderID)")
+            .onChange(of: colorScheme) { _ in
+                // Force a refresh when color scheme changes
+                sliderID = UUID()
+            }
     }
 }
 
@@ -437,6 +457,7 @@ struct AnimatedSegmentPicker: View {
     let options: [String]
     var isDisabled: Bool = false
     @Namespace private var namespace
+    @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
         HStack(spacing: 0) {
@@ -479,6 +500,7 @@ struct AnimatedSegmentPicker: View {
         )
         .opacity(isDisabled ? 0.7 : 1)
         .animation(.spring(response: 0.3), value: isDisabled) // Animate disabled state changes
+        .id("segment-picker-\(colorScheme)")
     }
 }
 
