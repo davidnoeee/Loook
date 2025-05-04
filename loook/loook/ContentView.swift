@@ -148,7 +148,7 @@ class ReminderManager: ObservableObject {
                     self.showArrowReminder = true
                     
                     // Auto-dismiss after 3 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                         withAnimation {
                             self.showArrowReminder = false
                             self.checkQueue()
@@ -159,7 +159,7 @@ class ReminderManager: ObservableObject {
                     self.showEyeReminder = true
                     
                     // Auto-dismiss after 2 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                         withAnimation {
                             self.showEyeReminder = false
                             self.checkQueue()
@@ -177,8 +177,11 @@ class ReminderManager: ObservableObject {
                             self.countdownSeconds -= 1
                         } else {
                             timer.invalidate()
-                            withAnimation {
-                                self.showCountdownReminder = false
+                            // Don't immediately hide - let the view handle it with its own animations
+                            // The view will set isShowing = false when animations complete
+                            
+                            // Check queue after a reasonable delay to allow animations to complete
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                                 self.checkQueue()
                             }
                         }
@@ -470,6 +473,7 @@ struct PostureReminderView: View {
     }
 }
 // Enhanced Blink Reminder View with playful animations
+// Enhanced Blink Reminder View with playful animations
 struct BlinkReminderView: View {
     @Binding var isShowing: Bool
     
@@ -587,7 +591,7 @@ struct BlinkReminderView: View {
         }
         
         // 3. Eye appears with playful animations
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 eyeScale = 1.0
                 eyeOpacity = 1
@@ -595,17 +599,12 @@ struct BlinkReminderView: View {
             }
             
             // First playful bounce - eye "blinks"
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                withAnimation(.spring(response: 0.15, dampingFraction: 0.8)) {
-                    //eyeScale = 0.9 // Eye slightly closes
-                }
-                
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 // Open eye with bounce
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         eyeScale = 0.8 // Eye opens wider
                         circleScale = 1.08 // Circle reacts slightly
-                                           //frameScale = 1.04 // Frame reacts slightly
                         eyeColor = .white.opacity(0.8)
                         circleColor = .white.opacity(0.05)
                         eyeBlur = 1
@@ -621,7 +620,6 @@ struct BlinkReminderView: View {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 eyeScale = 1.0
                                 circleScale = 1.0
-                                //frameScale = 1.0
                                 eyeColor = .black
                                 circleColor = .white
                                 eyeBlur = 0
@@ -631,74 +629,100 @@ struct BlinkReminderView: View {
                             withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) {
                                 frameScale = 1.0 // Frame reacts slightly
                             }
-                            /*
-                             // Second playful bounce after a pause
-                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                             withAnimation(.spring(response: 0.4, dampingFraction: 0.55)) {
-                             eyeBounce = -4 // Eye moves slightly up
-                             eyeScale = 1.1
-                             circleScale = 1.05
-                             }
-                             
-                             // Return to position
-                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                             withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
-                             eyeBounce = 0
-                             eyeScale = 1.0
-                             circleScale = 1.0
-                             }
-                             }
-                             }
-                             */
-                        }
-                    }
-                }
-            }
-        }
-        
-        // 4. Playful exit animation
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.3) {
-            // Prepare to exit - slight pulse
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                frameScale = 1.05
-                circleScale = 1.07
-                eyeScale = 1.05
-            }
-            
-            // Begin exit animation
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                // Eye disappears first with quick scale down
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    eyeScale = 0.7
-                    eyeOpacity = 0.5
-                    eyeBlur = 2
-                }
-                
-                // Then circle and frame shrink and fade
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
-                        // Circle shrinks faster than frame
-                        circleScale = 0.5
-                        circleOpacity = 0.4
-                        circleBlur = 4
-                        eyeScale = 0.3
-                        eyeOpacity = 0
-                        eyeBlur = 5
-                    }
-                    
-                    // Final disappearing animation
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            frameScale = 0.6
-                            frameOpacity = 0
-                            frameBlur = 8
-                            circleScale = 0.3
-                            circleOpacity = 0
-                            circleBlur = 8
                         }
                         
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            isShowing = false
+                        // ==== EXIT ANIMATION NESTED INSIDE MAIN ANIMATION SEQUENCE ====
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                            // Reset to steady state
+                            /*
+                            frameScale = 1.0
+                            circleScale = 1.0
+                            eyeScale = 1.0
+                            circleColor = .white
+                            eyeColor = .black
+                            frameBlur = 0
+                            circleBlur = 0
+                            eyeBlur = 0
+                             */
+                            
+                            frameOpacity = 1
+                            circleOpacity = 1
+                            eyeOpacity = 1
+                            
+                            // Wait a tiny bit to ensure reset is applied
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                // Prepare to exit - slight pulse
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                    frameScale = 1.03
+                                    circleScale = 1.09
+                                    eyeScale = 1.05
+                                    
+                                    frameOpacity = 1
+                                    circleOpacity = 1
+                                    eyeOpacity = 1
+                                }
+                                
+                                // Begin exit animation
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    // Eye disappears first
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        eyeScale = 0.5
+                                        eyeOpacity = 0.5
+                                        eyeBlur = 2
+                                        frameBlur = 2
+                                        circleBlur = 2
+                                        
+                                        frameOpacity = 1
+                                        circleOpacity = 1
+                                    }
+                                    
+                                    // Then circle shrinks and fades
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                                        // Circle animations
+                                        withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
+                                            circleScale = 0.1
+                                            frameScale = 0.6
+                                            //frameOpacity = 0
+                                            eyeOpacity = 0.5
+                                            circleBlur = 8
+                                            frameBlur = 10
+                                        }
+                                        
+                                        
+                                        withAnimation(.easeOut(duration: 0.35)) {
+                                            circleOpacity = 0
+                                            circleBlur = 12
+                                            frameOpacity = 0
+                                        }
+                                        
+                                        // Eye continues to fade
+                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                            eyeScale = 0.3
+                                            eyeOpacity = 0
+                                            eyeBlur = 10
+                                        }
+                                        
+                                        /*
+                                        // Finally the frame disappears
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                            // Frame scales down and fades
+                                            withAnimation(.easeOut(duration: 0.35)) {
+                                                frameScale = 0.6
+                                                frameOpacity = 0
+                                                frameBlur = 8
+                                                circleScale = 0.3
+                                                circleOpacity = 0
+                                                circleBlur = 8
+                                            } */
+                                            
+                                            // Set isShowing to false after animation completes
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                                isShowing = false
+                                            }
+                                        }
+                                    
+                                }
+                            }
                         }
                     }
                 }
@@ -707,29 +731,52 @@ struct BlinkReminderView: View {
     }
 }
 
-// Updated Countdown Reminder View with new design language
+// Enhanced Countdown Reminder View with fluid animations and completion transformation
+// Enhanced Countdown Reminder View with fluid animations and completion transformation
+// Enhanced Countdown Reminder View with fluid animations and completion transformation
 struct CountdownReminderView: View {
     @Binding var isShowing: Bool
     @Binding var secondsRemaining: Int
-    @State private var isHovering = false
+    
+    // Frame animation states
+    @State private var frameWidth: CGFloat = 150
+    @State private var frameHeight: CGFloat = 60
     @State private var frameOpacity: Double = 0
-    @State private var frameBlur: CGFloat = 10
-    @State private var frameScale: CGFloat = 0.9
+    @State private var frameBlur: CGFloat = 30
+    @State private var frameScale: CGFloat = 0.5
+    @State private var frameOffset: CGFloat = 0
+    @State private var isHovering = false
+    
+    // Text animation states
     @State private var textOpacity: Double = 0
-    @State private var textScale: CGFloat = 0.8
+    @State private var textScale: CGFloat = 0.6
+    @State private var textBlur: CGFloat = 15
+    
+    // Completion animation states
+    @State private var isShowingCompletion: Bool = false
+    @State private var innerCircleOpacity: Double = 0
+    @State private var innerCircleScale: CGFloat = 0.2
+    @State private var innerCircleBlur: CGFloat = 10
+    @State private var checkmarkOpacity: Double = 0
+    @State private var checkmarkScale: CGFloat = 0.2
+    @State private var checkmarkBlur: CGFloat = 5
+    
+    // For tracking previous time to trigger animations
+    @State private var previousSeconds: Int = 0
+    @State private var isAnimatingOut: Bool = false
     
     var body: some View {
         ZStack {
-            // Horizontal pill with new design
-            Capsule(style: .continuous)
+            // Adaptable shape that morphs from pill to circle
+            RoundedRectangle(cornerRadius: frameHeight / 2)
                 .fill(Material.ultraThinMaterial)
-                .frame(width: 140, height: 60)
+                .frame(width: frameWidth, height: frameHeight)
                 .overlay {
-                    Capsule(style: .continuous)
+                    RoundedRectangle(cornerRadius: frameHeight / 2)
                         .stroke(Color.black, lineWidth: 0.8)
                 }
                 .overlay {
-                    Capsule(style: .continuous)
+                    RoundedRectangle(cornerRadius: frameHeight / 2)
                         .stroke(Color.white.opacity(0.3), lineWidth: 1)
                         .padding(0.8)
                 }
@@ -738,110 +785,377 @@ struct CountdownReminderView: View {
                 .opacity(frameOpacity)
                 .blur(radius: frameBlur)
                 .scaleEffect(frameScale)
+                .offset(y: frameOffset)
             
-            // Content with countdown and dismiss button
-            HStack(spacing: 8) {
-                // Countdown text
-                Text("\(secondsRemaining)s")
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundColor(.primary)
-                    .contentTransition(.numericText())
-                    .opacity(textOpacity)
-                    .scaleEffect(textScale)
-                    .animation(.spring(response: 0.35, dampingFraction: 0.8), value: secondsRemaining)
-                
-                // Dismiss button (only visible on hover)
-                if isHovering {
-                    Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            // First make the text bounce out
-                            textScale = 1.1
-                            textOpacity = 0
-                            
-                            // Then the frame
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.1)) {
-                                frameScale = 1.05
-                                frameOpacity = 0
-                                frameBlur = 5
-                            }
-                            
-                            // Notify after animations
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                isShowing = false
-                                NotificationCenter.default.post(name: NSNotification.Name("CountdownDismissed"), object: nil)
-                            }
+            if !isShowingCompletion {
+                // Content with countdown and dismiss button
+                HStack(spacing: 8) {
+                    // Countdown text with fluid animations
+                    Text("\(secondsRemaining)s")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(.primary)
+                        .contentTransition(.numericText(countsDown: true))
+                        .opacity(textOpacity)
+                        .scaleEffect(textScale)
+                        .blur(radius: textBlur)
+                        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: secondsRemaining)
+                    
+                    // Dismiss button (only visible on hover)
+                    if isHovering {
+                        Button {
+                            startExitAnimation()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 16, design: .rounded))
+                                .foregroundColor(.secondary)
                         }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 16, design: .rounded))
-                            .foregroundColor(.secondary)
+                        .buttonStyle(.plain)
+                        .transition(.opacity)
                     }
-                    .buttonStyle(.plain)
-                    .transition(.opacity)
+                }
+                .padding(.horizontal, isHovering ? 8 : 0)
+            } else {
+                // Completion view with white circle and checkmark
+                ZStack {
+                    // White inner circle
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [.white, .white.opacity(0.9)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        .frame(width: 70, height: 70)
+                        .overlay {
+                            Circle()
+                                .stroke(Color.black.opacity(0.15), lineWidth: 0.5)
+                        }
+                        .overlay {
+                            Circle()
+                                .stroke(Color.white.opacity(0.5), lineWidth: 0.5)
+                                .padding(0.5)
+                        }
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .scaleEffect(innerCircleScale)
+                        .blur(radius: innerCircleBlur)
+                        .opacity(innerCircleOpacity)
+                    
+                    // Checkmark icon
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
+                        .scaleEffect(checkmarkScale)
+                        .opacity(checkmarkOpacity)
+                        .blur(radius: checkmarkBlur)
                 }
             }
-            .padding(.horizontal, isHovering ? 8 : 0)
         }
         .environment(\.colorScheme, .dark)
         .onAppear {
-            // Initial state
-            frameOpacity = 0
-            frameBlur = 10
-            frameScale = 0.9
-            textOpacity = 0
-            textScale = 0.8
-            
-            // 1. Animate in the frame with blur
-            withAnimation(.easeOut(duration: 0.3)) {
-                frameOpacity = 1
-                frameBlur = 0
-                frameScale = 1.0
-            }
-            
-            // 2. Animate in the text with slight delay
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1)) {
-                textOpacity = 1
-                textScale = 1.0
-            }
-            
-            // 3. Add observer for dismissal notification
-            NotificationCenter.default.addObserver(
-                forName: NSNotification.Name("CountdownDismissed"),
-                object: nil,
-                queue: .main
-            ) { _ in
-                DispatchQueue.main.async {
-                    withAnimation {
-                        self.isShowing = false
+            startEntranceAnimation()
+            previousSeconds = secondsRemaining
+        }
+        .onChange(of: secondsRemaining) { newValue in
+            if newValue != previousSeconds {
+                animateWidthChange()
+                previousSeconds = newValue
+                
+                // Transform to completion when countdown reaches zero
+                if newValue == 0 && !isShowingCompletion && !isAnimatingOut {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        startCompletionTransformation()
                     }
                 }
             }
-            
-            // 4. Auto-dismiss when countdown reaches zero
-            if secondsRemaining == 0 {
-                // First bounce the text
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    textScale = 1.1
-                    textOpacity = 0
-                }
-                
-                // Then bounce and fade the frame
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1)) {
-                    frameScale = 1.05
-                    frameOpacity = 0
-                    frameBlur = 5
-                }
+        }
+        .onChange(of: isShowing) { newValue in
+            // If parent tries to hide this view while we're showing completion,
+            // make sure our own animations finish properly
+            if !newValue && isShowingCompletion && !isAnimatingOut {
+                startExitAnimationAfterCompletion()
             }
         }
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isHovering = hovering
+            if !isShowingCompletion {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isHovering = hovering
+                }
+            }
+        }
+    }
+    
+    // MARK: - Animation Functions
+    
+    private func startEntranceAnimation() {
+        // Initial state
+        frameOpacity = 0
+        frameBlur = 20
+        frameScale = 0.8
+        textOpacity = 0
+        textScale = 0.8
+        textBlur = 10
+        
+        // 1. Animate in the frame with blur and scale
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            frameOpacity = 1
+            frameBlur = 0
+            frameScale = 1.07 // Slight overshoot
+        }
+        
+        // Frame settles
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                frameScale = 1.0
+            }
+        }
+        
+        // 2. Animate in the text with slight delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
+                textOpacity = 1
+                textScale = 1.15 // Slight overshoot
+                textBlur = 0
+            }
+            
+            // Text settles
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                    textScale = 1.0
+                }
+            }
+        }
+    }
+    
+    private func animateWidthChange() {
+        // Calculate new width based on remaining seconds (150 → 70 in steps of 4)
+        let maxWidth: CGFloat = 150
+        let minWidth: CGFloat = 70
+        let totalSteps = 20 // Assuming 20 seconds countdown
+        
+        // Calculate width proportionally to remaining time
+        let remainingSteps = CGFloat(secondsRemaining)
+        let newWidth = max(minWidth, minWidth + (maxWidth - minWidth) * (remainingSteps / CGFloat(totalSteps)))
+        
+        // Animated width change with subtle bounce and blur
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            frameBlur = 1.2 // Very subtle blur during animation
+            frameHeight = 58
+            frameOffset = 1
+        }
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+            frameWidth = newWidth
+        }
+        
+        // Remove the subtle blur after animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                frameBlur = 0
+                frameHeight = 60
+                frameOffset = 0
+            }
+        }
+    }
+    
+    private func startCompletionTransformation() {
+        // 1. Fade out text content
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.65)) {
+            textOpacity = 0
+            textScale = 0.8
+            textBlur = 5
+        }
+        
+        // 2. Begin transformation from pill to circle
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.7)) {
+                // Transform to circle
+                frameWidth = 100
+                frameHeight = 100
+                frameScale = 1.05 // Slight overshoot
+                frameBlur = 2 // Slight blur during transformation
+            }
+            
+            // 3. Signal that we're now showing completion state
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                isShowingCompletion = true
+                
+                // Settle frame after transformation
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    frameScale = 1.0
+                    frameBlur = 0
+                }
+                
+                // 4. Animate in the inner white circle
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.65)) {
+                        innerCircleOpacity = 1
+                        innerCircleScale = 1.15 // Slight overshoot
+                        innerCircleBlur = 0
+                    }
+                    
+                    // Inner circle settles
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                            innerCircleScale = 1.0
+                        }
+                    }
+                    
+                    // 5. Animate in the checkmark with slight delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
+                            checkmarkOpacity = 1
+                            checkmarkScale = 1.2 // Bigger overshoot for emphasis
+                            checkmarkBlur = 0
+                        }
+                        
+                        // Checkmark settles
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                                checkmarkScale = 1.0
+                            }
+                            
+                            // Subtle pulse animation for checkmark after settling
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                withAnimation(.spring(response: 0.6, dampingFraction: 0.65)) {
+                                    checkmarkScale = 1.08
+                                }
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        checkmarkScale = 1.0
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // 6. Wait for longer display time (2 seconds) then begin exit animation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            startExitAnimationAfterCompletion()
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func startExitAnimationAfterCompletion() {
+        // Prevent multiple exit animations
+        if isAnimatingOut {
+            return
+        }
+        isAnimatingOut = true
+        
+        // 1. First prepare for exit with slight scale up
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            frameScale = 1.03
+            innerCircleScale = 1.05
+            checkmarkScale = 1.03
+        }
+        
+        // 2. First animate out the checkmark with proper effects
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
+                checkmarkScale = 0.7
+                checkmarkOpacity = 0
+                checkmarkBlur = 5
+            }
+            
+            // 3. Then animate out the inner circle with delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    innerCircleScale = 0.6
+                    innerCircleOpacity = 0
+                    innerCircleBlur = 8
+                }
+                
+                // 4. Finally, animate out the frame with staggered effects
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    // First a little prep animation
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                        frameScale = 1.05
+                        frameBlur = 3
+                    }
+                    
+                    // Then scale down and fade with increasing blur
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.65)) {
+                            frameScale = 0.7
+                            frameBlur = 15
+                        }
+                        
+                        // Final fade out with separate animation
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                frameOpacity = 0
+                                frameBlur = 25
+                            }
+                        }
+                        
+                        // Notify after animations complete
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            isShowing = false
+                            NotificationCenter.default.post(name: NSNotification.Name("CountdownDismissed"), object: nil)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private func startExitAnimation() {
+        // Prevent multiple exit animations
+        if isAnimatingOut {
+            return
+        }
+        isAnimatingOut = true
+        
+        // Used for manual dismissal (x button)
+        if isShowingCompletion {
+            startExitAnimationAfterCompletion()
+            return
+        }
+        
+        // 1. First make the text bounce out with blur
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+            textScale = 1.1
+            textOpacity = 0
+            textBlur = 5
+        }
+        
+        // 2. Then animate the frame with staggered effects
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // First a little prep bounce
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                frameScale = 1.05
+                frameBlur = 2
+            }
+            
+            // Then scale down with blur
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                    frameScale = 0.8
+                    frameBlur = 15
+                }
+                
+                // Final fade out as separate animation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        frameOpacity = 0
+                        frameBlur = 25
+                    }
+                }
+                
+                // Notify after animations complete
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isShowing = false
+                    NotificationCenter.default.post(name: NSNotification.Name("CountdownDismissed"), object: nil)
+                }
             }
         }
     }
 }
-
 // Updated Settings View with more subtle strokes
 struct SettingsView: View {
     @ObservedObject var reminderManager: ReminderManager
