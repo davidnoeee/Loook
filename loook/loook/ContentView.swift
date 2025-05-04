@@ -469,15 +469,30 @@ struct PostureReminderView: View {
         }
     }
 }
-// Updated Blink Reminder View with new design language
+// Enhanced Blink Reminder View with playful animations
 struct BlinkReminderView: View {
     @Binding var isShowing: Bool
-    @State private var scale: CGFloat = 0.8
+    
+    // Frame animation states
+    @State private var frameScale: CGFloat = 0.2
     @State private var frameOpacity: Double = 0
-    @State private var frameBlur: CGFloat = 10
+    @State private var frameBlur: CGFloat = 15
+    
+    // Circle animation states
+    @State private var circleScale: CGFloat = 0.2
     @State private var circleOpacity: Double = 0
+    @State private var circleBlur: CGFloat = 10
+    @State private var circleOffset: CGFloat = 0
+    
+    @State private var circleColor: Color = .white.opacity(1)
+    
+    // Eye animation states
+    @State private var eyeScale: CGFloat = 0.2
     @State private var eyeOpacity: Double = 0
-    @State private var eyeScale: CGFloat = 0.8
+    @State private var eyeBlur: CGFloat = 5
+    @State private var eyeBounce: CGFloat = 0
+    
+    @State private var eyeColor: Color = .black.opacity(1)
     
     var body: some View {
         ZStack {
@@ -496,19 +511,14 @@ struct BlinkReminderView: View {
                 }
                 .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 3)
                 .shadow(color: .black.opacity(0.35), radius: 20, x: 0, y: 5)
+                .scaleEffect(frameScale)
                 .opacity(frameOpacity)
                 .blur(radius: frameBlur)
             
-            // Eye icon - now white with dark icon
+            // White circle with eye icon
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [.white, .white.opacity(0.9)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                    .fill(circleColor)
                     .frame(width: 70, height: 70)
                     .overlay {
                         Circle()
@@ -520,55 +530,177 @@ struct BlinkReminderView: View {
                             .padding(0.5)
                     }
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    .scaleEffect(scale)
+                    .scaleEffect(circleScale)
+                    .blur(radius: circleBlur)
                     .opacity(circleOpacity)
+                    .offset(y: circleOffset)
                 
+                // Eye icon with bounce animation
                 Image(systemName: "eye")
                     .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.black)
+                    .foregroundColor(eyeColor)
                     .scaleEffect(eyeScale)
                     .opacity(eyeOpacity)
+                    .blur(radius: eyeBlur)
+                    .offset(y: eyeBounce)
             }
         }
         .environment(\.colorScheme, .dark)
-        .onAppear {
-            // Sequence the animations but keep them simple
-            
-            // 1. Show the frame
-            withAnimation(.easeIn(duration: 0.2)) {
-                frameOpacity = 1
+        .onAppear(perform: startAnimation)
+    }
+    
+    private func startAnimation() {
+        // PLAYFUL FLUID ANIMATION SEQUENCE
+        
+        // 1. Frame appears with bounce
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.65)) {
+            frameScale = 1.12
+            frameOpacity = 1
+            frameBlur = 5
+        }
+        
+        // Frame settles to normal size
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                frameScale = 1.0
                 frameBlur = 0
             }
-            
-            // 2. Show and scale the circle
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
-                scale = 1.0
+        }
+        
+        // 2. Circle appears with slight delay and bounce
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.65)) {
+                circleScale = 1.15
                 circleOpacity = 1
+                circleBlur = 3
+                circleOffset = -5 // Slight upward movement
             }
             
-            // 3. Show and scale the eye
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2)) {
+            // Circle settles
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    circleScale = 1.0
+                    circleBlur = 0
+                    circleOffset = 0
+                }
+            }
+        }
+        
+        // 3. Eye appears with playful animations
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 eyeScale = 1.0
                 eyeOpacity = 1
+                eyeBlur = 0
             }
             
-            // 4. Bounce the eye slightly
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.5).repeatCount(1, autoreverses: true)) {
-                eyeScale = 1.1
-            }
-            
-            // Auto-dismiss after delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                // Fade out everything together
-                withAnimation(.easeOut(duration: 0.3)) {
-                    frameOpacity = 0
-                    circleOpacity = 0
-                    eyeOpacity = 0
+            // First playful bounce - eye "blinks"
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                withAnimation(.spring(response: 0.15, dampingFraction: 0.8)) {
+                    //eyeScale = 0.9 // Eye slightly closes
                 }
                 
-                // Ensure isShowing is set to false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    isShowing = false
+                // Open eye with bounce
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        eyeScale = 0.8 // Eye opens wider
+                        circleScale = 1.08 // Circle reacts slightly
+                                           //frameScale = 1.04 // Frame reacts slightly
+                        eyeColor = .white.opacity(0.8)
+                        circleColor = .white.opacity(0.05)
+                        eyeBlur = 1
+                    }
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) {
+                            frameScale = 1.04 // Frame reacts slightly
+                        }
+                        
+                        // Settle to normal
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                eyeScale = 1.0
+                                circleScale = 1.0
+                                //frameScale = 1.0
+                                eyeColor = .black
+                                circleColor = .white
+                                eyeBlur = 0
+                            }
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.39) {
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) {
+                                frameScale = 1.0 // Frame reacts slightly
+                            }
+                            /*
+                             // Second playful bounce after a pause
+                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                             withAnimation(.spring(response: 0.4, dampingFraction: 0.55)) {
+                             eyeBounce = -4 // Eye moves slightly up
+                             eyeScale = 1.1
+                             circleScale = 1.05
+                             }
+                             
+                             // Return to position
+                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                             withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                             eyeBounce = 0
+                             eyeScale = 1.0
+                             circleScale = 1.0
+                             }
+                             }
+                             }
+                             */
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 4. Playful exit animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.3) {
+            // Prepare to exit - slight pulse
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                frameScale = 1.05
+                circleScale = 1.07
+                eyeScale = 1.05
+            }
+            
+            // Begin exit animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                // Eye disappears first with quick scale down
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    eyeScale = 0.7
+                    eyeOpacity = 0.5
+                    eyeBlur = 2
+                }
+                
+                // Then circle and frame shrink and fade
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
+                        // Circle shrinks faster than frame
+                        circleScale = 0.5
+                        circleOpacity = 0.4
+                        circleBlur = 4
+                        eyeScale = 0.3
+                        eyeOpacity = 0
+                        eyeBlur = 5
+                    }
+                    
+                    // Final disappearing animation
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            frameScale = 0.6
+                            frameOpacity = 0
+                            frameBlur = 8
+                            circleScale = 0.3
+                            circleOpacity = 0
+                            circleBlur = 8
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isShowing = false
+                        }
+                    }
                 }
             }
         }
