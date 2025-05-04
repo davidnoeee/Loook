@@ -10,10 +10,13 @@ on:
 
 jobs:
   bump:
-    if: github.event.head_commit.message == null || !startsWith(github.event.head_commit.message, 'chore: bump build number')
     runs-on: macos-latest
 
     steps:
+      - name: Skip bump if commit is already a bump
+        if: "!startsWith(github.event.head_commit.message || '', 'chore: bump build number')"
+        run: echo "Proceeding with build bump..."
+
       - name: Checkout full history
         uses: actions/checkout@v3
         with:
