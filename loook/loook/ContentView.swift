@@ -239,12 +239,14 @@ class ReminderManager: ObservableObject {
     }
 }
 
-// Posture Reminder View (Arrow in Pill)
+// Posture Reminder View (Arrow in Pill) - SIMPLIFIED VERSION
 struct PostureReminderView: View {
     @Binding var isShowing: Bool
-    @State private var circleOffset: CGFloat = 40
+    @State private var circleOffset: CGFloat = 20
     @State private var frameOpacity: Double = 0
+    @State private var frameBlur: CGFloat = 10
     @State private var circleOpacity: Double = 0
+    @State private var arrowOpacity: Double = 0
     @State private var arrowBounce: CGFloat = 0
     
     var body: some View {
@@ -263,6 +265,7 @@ struct PostureReminderView: View {
                 )
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
                 .opacity(frameOpacity)
+                .blur(radius: frameBlur)
             
             // Circle with arrow
             ZStack {
@@ -276,61 +279,72 @@ struct PostureReminderView: View {
                     )
                     .frame(width: 70, height: 70)
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .opacity(circleOpacity)
                 
                 Image(systemName: "arrow.up")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.black)
                     .offset(y: arrowBounce)
+                    .opacity(arrowOpacity)
             }
             .offset(y: circleOffset)
-            .opacity(circleOpacity)
         }
         .onAppear {
-            // Initial state
-            circleOffset = 20
-            frameOpacity = 0
-            circleOpacity = 0
+            // Sequence the animations but keep them simple
             
-            // First fade in the frame quickly
+            // 1. Show the frame
             withAnimation(.easeIn(duration: 0.2)) {
                 frameOpacity = 1
+                frameBlur = 0
             }
             
-            // Then fade in the circle at bottom position
+            // 2. Show the circle
             withAnimation(.easeIn(duration: 0.3).delay(0.1)) {
                 circleOpacity = 1
             }
             
-            // Move circle up with a bounce
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.65).delay(0.4)) {
-                circleOffset = -20 // Consistent padding at top
+            // 3. Show the arrow
+            withAnimation(.easeIn(duration: 0.2).delay(0.2)) {
+                arrowOpacity = 1
             }
             
-            // Add a subtle bounce to the arrow
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.6).repeatCount(1, autoreverses: true)) {
+            // 4. Move circle up
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.65).delay(0.3)) {
+                circleOffset = -20
+            }
+            
+            // 5. Bounce the arrow
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.5).repeatCount(1, autoreverses: true)) {
                 arrowBounce = -5
             }
             
-            // Fade out the circle first
-            withAnimation(.easeOut(duration: 0.3).delay(2.3)) {
-                circleOpacity = 0
-            }
-            
-            // Then quickly fade out the frame
-            withAnimation(.easeOut(duration: 0.2).delay(2.5)) {
-                frameOpacity = 0
+            // Auto-dismiss after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                // Fade out everything together
+                withAnimation(.easeOut(duration: 0.3)) {
+                    frameOpacity = 0
+                    circleOpacity = 0
+                    arrowOpacity = 0
+                }
+                
+                // Ensure isShowing is set to false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isShowing = false
+                }
             }
         }
     }
 }
 
-// Blink Reminder View (Eye in Circle)
+// Blink Reminder View (Eye in Circle) - SIMPLIFIED VERSION
 struct BlinkReminderView: View {
     @Binding var isShowing: Bool
-    @State private var scale: CGFloat = 0.5
+    @State private var scale: CGFloat = 0.8
     @State private var frameOpacity: Double = 0
+    @State private var frameBlur: CGFloat = 10
     @State private var circleOpacity: Double = 0
-    @State private var eyeBounce: CGFloat = 0
+    @State private var eyeOpacity: Double = 0
+    @State private var eyeScale: CGFloat = 0.8
     
     var body: some View {
         ZStack {
@@ -348,6 +362,7 @@ struct BlinkReminderView: View {
                 )
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
                 .opacity(frameOpacity)
+                .blur(radius: frameBlur)
             
             // Circle with eye
             ZStack {
@@ -362,62 +377,70 @@ struct BlinkReminderView: View {
                     .frame(width: 70, height: 70)
                     .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
                     .scaleEffect(scale)
+                    .opacity(circleOpacity)
                 
                 Image(systemName: "eye")
                     .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.black)
-                    .scaleEffect(scale)
-                    .offset(y: eyeBounce)
+                    .scaleEffect(eyeScale)
+                    .opacity(eyeOpacity)
             }
-            .opacity(circleOpacity)
         }
         .onAppear {
-            // Initial state
-            scale = 0.5
-            frameOpacity = 0
-            circleOpacity = 0
+            // Sequence the animations but keep them simple
             
-            // First fade in the frame quickly
+            // 1. Show the frame
             withAnimation(.easeIn(duration: 0.2)) {
                 frameOpacity = 1
+                frameBlur = 0
             }
             
-            // Then fade in and scale the circle
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.65).delay(0.1)) {
+            // 2. Show and scale the circle
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
                 scale = 1.0
-                circleOpacity = 1.0
+                circleOpacity = 1
             }
             
-            // Add a subtle bounce to the eye icon
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.4)) {
-                eyeBounce = -5
+            // 3. Show and scale the eye
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2)) {
+                eyeScale = 1.0
+                eyeOpacity = 1
             }
             
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.9)) {
-                eyeBounce = 0
+            // 4. Bounce the eye slightly
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.5).repeatCount(1, autoreverses: true)) {
+                eyeScale = 1.1
             }
             
-            // Fade out the circle first
-            withAnimation(.easeOut(duration: 0.3).delay(1.4)) {
-                scale = 0.6
-                circleOpacity = 0
-            }
-            
-            // Then quickly fade out the frame
-            withAnimation(.easeOut(duration: 0.2).delay(1.6)) {
-                scale = 0.6
-                frameOpacity = 0
+            // Auto-dismiss after delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                // Fade out everything together
+                withAnimation(.easeOut(duration: 0.3)) {
+                    frameOpacity = 0
+                    circleOpacity = 0
+                    eyeOpacity = 0
+                }
+                
+                // Ensure isShowing is set to false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isShowing = false
+                }
             }
         }
     }
 }
+
 
 // Countdown Reminder View (Distance Focus)
 struct CountdownReminderView: View {
     @Binding var isShowing: Bool
     @Binding var secondsRemaining: Int
     @State private var isHovering = false
-    @State private var scale: CGFloat = 0.9
+    @State private var frameOpacity: Double = 0
+    @State private var frameBlur: CGFloat = 10
+    @State private var frameScale: CGFloat = 0.9
+    @State private var textOpacity: Double = 0
+    @State private var textScale: CGFloat = 0.8
     
     var body: some View {
         ZStack {
@@ -434,6 +457,9 @@ struct CountdownReminderView: View {
                         ), lineWidth: 0.5)
                 )
                 .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                .opacity(frameOpacity)
+                .blur(radius: frameBlur)
+                .scaleEffect(frameScale)
             
             // Content with countdown and dismiss button
             HStack(spacing: 8) {
@@ -443,15 +469,28 @@ struct CountdownReminderView: View {
                     .monospacedDigit()
                     .foregroundColor(.primary)
                     .contentTransition(.numericText())
+                    .opacity(textOpacity)
+                    .scaleEffect(textScale)
                     .animation(.spring(response: 0.35, dampingFraction: 0.8), value: secondsRemaining)
                 
                 // Dismiss button (only visible on hover)
                 if isHovering {
                     Button {
-                        withAnimation {
-                            isShowing = false
-                            // Also notify the reminder manager that this reminder has completed
-                            DispatchQueue.main.async {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                            // First make the text bounce out
+                            textScale = 1.1
+                            textOpacity = 0
+                            
+                            // Then the frame
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.7).delay(0.1)) {
+                                frameScale = 1.05
+                                frameOpacity = 0
+                                frameBlur = 5
+                            }
+                            
+                            // Notify after animations
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                isShowing = false
                                 NotificationCenter.default.post(name: NSNotification.Name("CountdownDismissed"), object: nil)
                             }
                         }
@@ -466,22 +505,53 @@ struct CountdownReminderView: View {
             }
             .padding(.horizontal, isHovering ? 8 : 0)
         }
-        .scaleEffect(scale)
         .onAppear {
-            // Start slightly smaller
-            scale = 0.9
+            // Initial state
+            frameOpacity = 0
+            frameBlur = 10
+            frameScale = 0.9
+            textOpacity = 0
+            textScale = 0.8
             
-            // Bounce in animation
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                scale = 1.0
+            // 1. Animate in the frame with blur
+            withAnimation(.easeOut(duration: 0.3)) {
+                frameOpacity = 1
+                frameBlur = 0
+                frameScale = 1.0
             }
             
-            // Add observer for dismissal notification
-            NotificationCenter.default.addObserver(forName: NSNotification.Name("CountdownDismissed"), object: nil, queue: .main) { _ in
+            // 2. Animate in the text with slight delay
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1)) {
+                textOpacity = 1
+                textScale = 1.0
+            }
+            
+            // 3. Add observer for dismissal notification
+            NotificationCenter.default.addObserver(
+                forName: NSNotification.Name("CountdownDismissed"),
+                object: nil,
+                queue: .main
+            ) { _ in
                 DispatchQueue.main.async {
                     withAnimation {
                         self.isShowing = false
                     }
+                }
+            }
+            
+            // 4. Auto-dismiss when countdown reaches zero
+            if secondsRemaining == 0 {
+                // First bounce the text
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    textScale = 1.1
+                    textOpacity = 0
+                }
+                
+                // Then bounce and fade the frame
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.1)) {
+                    frameScale = 1.05
+                    frameOpacity = 0
+                    frameBlur = 5
                 }
             }
         }
