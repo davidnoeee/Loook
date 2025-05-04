@@ -2,16 +2,10 @@ import SwiftUI
 import ServiceManagement
 
 struct ContentView: View {
-    @StateObject private var reminderManager = ReminderManager()
-    @State private var showSettings = false
+    @ObservedObject var reminderManager: ReminderManager
     
     var body: some View {
-        // Invisible view - no background elements, just the reminders as needed
         ZStack {
-            Color.clear
-                .frame(width: 0, height: 0)
-                .contentShape(Rectangle()) // Just for hit-testing
-
             if reminderManager.showArrowReminder {
                 VStack {
                     PostureReminderView(isShowing: $reminderManager.showArrowReminder)
@@ -24,6 +18,7 @@ struct ContentView: View {
                     
                     Spacer()
                 }
+                .animation(.easeInOut, value: reminderManager.showArrowReminder)
             }
             
             if reminderManager.showEyeReminder {
@@ -35,6 +30,7 @@ struct ContentView: View {
                     
                     Spacer()
                 }
+                .animation(.easeInOut, value: reminderManager.showEyeReminder)
             }
             
             if reminderManager.showCountdownReminder {
@@ -49,14 +45,18 @@ struct ContentView: View {
                     
                     Spacer()
                 }
+                .animation(.easeInOut, value: reminderManager.showCountdownReminder)
             }
         }
-        .ignoresSafeArea()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.clear)
         .onAppear {
             reminderManager.startTimers()
         }
+    }
+    
+    init(reminderManager: ReminderManager = ReminderManager()) {
+        self.reminderManager = reminderManager
     }
 }
 
@@ -148,55 +148,74 @@ class ReminderManager: ObservableObject {
     // Test methods
     func testPostureReminder() {
         // Hide other reminders first
-        showEyeReminder = false
-        showCountdownReminder = false
+        withAnimation {
+            showEyeReminder = false
+            showCountdownReminder = false
+        }
         
         // Show arrow reminder
-        showArrowReminder = true
-        
-        // Auto-dismiss after 3 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        DispatchQueue.main.async {
             withAnimation {
-                self.showArrowReminder = false
+                self.showArrowReminder = true
+            }
+            
+            // Auto-dismiss after 3 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                withAnimation {
+                    self.showArrowReminder = false
+                }
             }
         }
     }
     
     func testBlinkReminder() {
         // Hide other reminders first
-        showArrowReminder = false
-        showCountdownReminder = false
+        withAnimation {
+            showArrowReminder = false
+            showCountdownReminder = false
+        }
         
         // Show eye reminder
-        showEyeReminder = true
-        
-        // Auto-dismiss after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        DispatchQueue.main.async {
             withAnimation {
-                self.showEyeReminder = false
+                self.showEyeReminder = true
+            }
+            
+            // Auto-dismiss after 2 seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                withAnimation {
+                    self.showEyeReminder = false
+                }
             }
         }
     }
     
     func testCountdownReminder() {
         // Hide other reminders first
-        showArrowReminder = false
-        showEyeReminder = false
+        withAnimation {
+            showArrowReminder = false
+            showEyeReminder = false
+        }
         
         // Reset and show countdown
         countdownSeconds = 20
-        showCountdownReminder = true
         
-        // Start the countdown timer
-        countdownProgressTimer?.invalidate()
-        countdownProgressTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
-            guard let self = self else { return }
-            if self.countdownSeconds > 0 {
-                self.countdownSeconds -= 1
-            } else {
-                timer.invalidate()
-                withAnimation {
-                    self.showCountdownReminder = false
+        DispatchQueue.main.async {
+            withAnimation {
+                self.showCountdownReminder = true
+            }
+            
+            // Start the countdown timer
+            self.countdownProgressTimer?.invalidate()
+            self.countdownProgressTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] timer in
+                guard let self = self else { return }
+                if self.countdownSeconds > 0 {
+                    self.countdownSeconds -= 1
+                } else {
+                    timer.invalidate()
+                    withAnimation {
+                        self.showCountdownReminder = false
+                    }
                 }
             }
         }
@@ -322,90 +341,212 @@ struct SettingsView: View {
     
     var body: some View {
         VStack(spacing: 20) {
+            // Header
             Text("Settings")
-                .font(.title)
-                .fontWeight(.bold)
+                .font(.system(size: 22, weight: .bold))
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 10)
             
-            VStack(alignment: .leading, spacing: 15) {
-                Toggle("Enable Reminders", isOn: $reminderManager.isRemindersEnabled)
-                    .onChange(of: reminderManager.isRemindersEnabled) { _ in
-                        reminderManager.startTimers()
+            // Settings content
+            VStack(alignment: .leading, spacing: 18) {
+                // Toggle section
+                LuminareCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        LuminareToggle(title: "Enable Reminders", isOn: $reminderManager.isRemindersEnabled)
+                            .onChange(of: reminderManager.isRemindersEnabled) { _ in
+                                reminderManager.startTimers()
+                            }
+                        
+                        LuminareToggle(title: "Launch at Login", isOn: $reminderManager.launchAtLogin)
+                            .onChange(of: reminderManager.launchAtLogin) { _ in
+                                reminderManager.toggleLaunchAtLogin()
+                            }
                     }
+                }
                 
-                Toggle("Launch at Login", isOn: $reminderManager.launchAtLogin)
-                    .onChange(of: reminderManager.launchAtLogin) { _ in
-                        reminderManager.toggleLaunchAtLogin()
-                    }
-                
-                Divider()
-                
-                VStack(alignment: .leading) {
-                    Text("Posture Reminder: \(Int(reminderManager.postureReminderInterval/60)) minutes")
-                    Slider(value: $reminderManager.postureReminderInterval, in: 60...3600, step: 60)
+                // Sliders section
+                LuminareCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Reminder Intervals")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.secondary)
+                        
+                        LuminareSlider(
+                            title: "Posture Reminder",
+                            value: $reminderManager.postureReminderInterval,
+                            range: 60...3600,
+                            step: 60,
+                            formatter: { "\(Int($0/60)) min" }
+                        )
                         .onChange(of: reminderManager.postureReminderInterval) { _ in
                             reminderManager.startTimers()
                         }
-                }
-                
-                VStack(alignment: .leading) {
-                    Text("Blink Reminder: \(Int(reminderManager.blinkReminderInterval/60)) minutes")
-                    Slider(value: $reminderManager.blinkReminderInterval, in: 30...1800, step: 30)
+                        
+                        LuminareSlider(
+                            title: "Blink Reminder",
+                            value: $reminderManager.blinkReminderInterval,
+                            range: 30...1800,
+                            step: 30,
+                            formatter: { "\(Int($0/60)) min" }
+                        )
                         .onChange(of: reminderManager.blinkReminderInterval) { _ in
                             reminderManager.startTimers()
                         }
-                }
-                
-                VStack(alignment: .leading) {
-                    Text("20/20/20 Reminder: \(Int(reminderManager.countdownReminderInterval/60)) minutes")
-                    Slider(value: $reminderManager.countdownReminderInterval, in: 60...3600, step: 60)
+                        
+                        LuminareSlider(
+                            title: "20/20/20 Reminder",
+                            value: $reminderManager.countdownReminderInterval,
+                            range: 60...3600,
+                            step: 60,
+                            formatter: { "\(Int($0/60)) min" }
+                        )
                         .onChange(of: reminderManager.countdownReminderInterval) { _ in
                             reminderManager.startTimers()
                         }
+                    }
                 }
-                
-                Divider()
                 
                 // Test buttons section
-                Text("Test Animations")
-                    .font(.headline)
-                    .padding(.top, 5)
-                
-                HStack(spacing: 10) {
-                    Button("Test Posture") {
-                        isPresented = false
-                        reminderManager.testPostureReminder()
+                LuminareCard {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Preview Animations")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 8) {
+                            LuminareButton(title: "Posture", iconName: "arrow.up.circle") {
+                                reminderManager.testPostureReminder()
+                            }
+                            
+                            LuminareButton(title: "Blink", iconName: "eye") {
+                                reminderManager.testBlinkReminder()
+                            }
+                            
+                            LuminareButton(title: "20/20/20", iconName: "timer") {
+                                reminderManager.testCountdownReminder()
+                            }
+                        }
                     }
-                    .buttonStyle(.bordered)
-                    
-                    Button("Test Blink") {
-                        isPresented = false
-                        reminderManager.testBlinkReminder()
-                    }
-                    .buttonStyle(.bordered)
-                    
-                    Button("Test 20/20/20") {
-                        isPresented = false
-                        reminderManager.testCountdownReminder()
-                    }
-                    .buttonStyle(.bordered)
                 }
-                .padding(.top, 5)
             }
             .padding(.horizontal)
             
             Spacer(minLength: 10)
             
+            // Footer
             HStack {
                 Spacer()
-                Button("Close") {
+                LuminareButton(title: "Close", iconName: "xmark.circle") {
                     isPresented = false
                 }
                 .keyboardShortcut(.escape, modifiers: [])
             }
             .padding(.horizontal)
+            .padding(.bottom, 10)
         }
-        .padding()
         .frame(width: 350)
         .fixedSize(horizontal: true, vertical: true) // Makes the view hug its content vertically
+    }
+}
+
+// Luminare Design System Components
+struct LuminareCard<Content: View>: View {
+    var content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            content
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+                .opacity(0.8)
+        )
+        .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 2)
+    }
+}
+
+struct LuminareToggle: View {
+    let title: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.primary)
+        }
+        .toggleStyle(SwitchToggleStyle(tint: Color.accentColor))
+    }
+}
+
+struct LuminareSlider: View {
+    let title: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+    let formatter: (Double) -> String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Text(formatter(value))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+            
+            Slider(value: $value, in: range, step: step)
+                .accentColor(.accentColor)
+        }
+    }
+}
+
+struct LuminareButton: View {
+    let title: String
+    let iconName: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: iconName)
+                    .font(.system(size: 12))
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(LuminareButtonStyle())
+    }
+}
+
+struct LuminareButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundColor(configuration.isPressed ? .primary.opacity(0.7) : .primary)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.ultraThinMaterial)
+                    .opacity(configuration.isPressed ? 0.7 : 1)
+            )
+            .shadow(color: Color.black.opacity(configuration.isPressed ? 0.01 : 0.05),
+                   radius: configuration.isPressed ? 2 : 4)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
 }

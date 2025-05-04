@@ -47,7 +47,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         popover.behavior = .transient
         popover.animates = true
         
-        // Create a hosting view for our SwiftUI settings view
+        // Share the same reminder manager instance
         let settingsView = SettingsView(reminderManager: reminderManager, isPresented: Binding<Bool>(
             get: { return self.popover.isShown },
             set: { if !$0 { self.popover.performClose(nil) } }
@@ -55,28 +55,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         let hostingController = NSHostingController(rootView: settingsView)
         popover.contentViewController = hostingController
-        popover.contentSize = NSSize(width: 350, height: 10) // Height will adjust based on content
     }
     
     func setupOverlayWindow() {
         // Create a transparent overlay window for reminders
+        let screenFrame = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 800, height: 600)
         overlayWindow = NSWindow(
-            contentRect: NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 800, height: 600),
-            styleMask: [.borderless, .nonactivatingPanel],
+            contentRect: screenFrame,
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
         
+        // Critical settings to ensure window appears over everything
         overlayWindow?.backgroundColor = .clear
         overlayWindow?.isOpaque = false
         overlayWindow?.hasShadow = false
-        overlayWindow?.level = .floating
+        overlayWindow?.level = .statusBar
         overlayWindow?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         overlayWindow?.ignoresMouseEvents = true
         
-        // Set the content view as our main ContentView
-        let contentView = NSHostingView(rootView: ContentView())
-        overlayWindow?.contentView = contentView
+        // Set the content view as our ContentView, sharing the reminder manager
+        let contentView = ContentView(reminderManager: reminderManager)
+        overlayWindow?.contentView = NSHostingView(rootView: contentView)
         
         // Show the transparent overlay window
         overlayWindow?.orderFrontRegardless()
@@ -98,12 +99,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             } else {
                 popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             }
-        }
-    }
-    
-    @objc func openSettings() {
-        if let button = statusItem?.button {
-            popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         }
     }
 }
