@@ -1160,6 +1160,31 @@ struct SettingsView: View {
                         }
                     }
                     
+                    // MARK: TEST BUTTONS SECTION
+                    // Test buttons section
+                    SettingsCard {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("Preview Animations")
+                                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                                .foregroundColor(.secondary)
+                            
+                            VStack(spacing: 8) {
+                                
+                                ilebButton(text: "Blink") {
+                                    reminderManager.testBlinkReminder()
+                                }
+                                ilebButton(text: "Posture") {
+                                    reminderManager.testPostureReminder()
+                                }
+                                
+                                ilebButton(text: "Distance Focus") {
+                                    reminderManager.testDistanceFocusReminder()
+                                }
+                            }
+                        }
+                    }
+                    
+                    
                     // Sliders section
                     SettingsCard {
                         VStack(alignment: .leading, spacing: 18) {
@@ -1210,31 +1235,7 @@ struct SettingsView: View {
                             }
                         }
                     }
-                    /*
-                    // Test buttons section
-                    SettingsCard {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Preview Animations")
-                                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                .foregroundColor(.secondary)
-                            
-                            VStack(spacing: 8) {
-                                
-                                ilebButton(text: "Blink") {
-                                    reminderManager.testBlinkReminder()
-                                }
-                                ilebButton(text: "Posture") {
-                                    reminderManager.testPostureReminder()
-                                }
-                                
-                                ilebButton(text: "Distance Focus") {
-                                    reminderManager.testDistanceFocusReminder()
-                                }
-                            }
-                        }
-                    }
-                    */
-                     
+                    
                     // Reset & Quit section
                     SettingsCard {
                         VStack(alignment: .leading, spacing: 14) {
@@ -1246,11 +1247,6 @@ struct SettingsView: View {
                                 ilebButton(text: "Reset Reminders") {
                                     reminderManager.resetPopups()
                                 }
-                                /*
-                                ilebButton(text: "Close") {
-                                    isPresented = false
-                                }
-                                 */
                                 
                                 ilebButton(text: "Quit App", destructive: false) {
                                     NSApplication.shared.terminate(nil)
@@ -1278,9 +1274,10 @@ struct SettingsView: View {
                 .stroke(Color.white.opacity(0.2), lineWidth: 0.8)
                 .padding(0.6)
         }
-        .environment(\.colorScheme, .dark)
-        .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 3)
          */
+        .fixedSize(horizontal: false, vertical: true) // This is key for making it size to content
+        .environment(\.colorScheme, .dark)
+        //.shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 3)
     }
 }
 

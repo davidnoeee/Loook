@@ -44,7 +44,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func setupPopover() {
         // Configure the settings popover
-        popover.behavior = .transient
+        popover.behavior = .transient // This enables auto-close when clicking outside
         popover.animates = true
         
         // Share the same reminder manager instance
@@ -55,6 +55,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         let hostingController = NSHostingController(rootView: settingsView)
         popover.contentViewController = hostingController
+        
+        // Make popover automatically size to its content
+        popover.contentSize = NSSize(width: 320, height: 0) // Width fixed, height will adapt
+        hostingController.view.setFrameSize(NSSize(width: 320, height: 1)) // Initial size, will be adjusted
     }
     
     func setupOverlayWindow() {
@@ -98,6 +102,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 popover.performClose(nil)
             } else {
                 popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+                
+                // Make the popover become active and focused immediately
+                DispatchQueue.main.async {
+                    self.popover.contentViewController?.view.window?.makeKey()
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             }
         }
     }
