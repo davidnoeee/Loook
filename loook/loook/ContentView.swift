@@ -1167,18 +1167,6 @@ struct SettingsView: View {
                                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                                 .foregroundColor(.secondary)
                             
-                            // Posture reminder: 5-30 minutes in 5-minute steps
-                            SettingsSlider(
-                                title: "Posture Reminder",
-                                value: $reminderManager.postureReminderInterval,
-                                range: 300...1800, // 5-30 minutes
-                                step: 300, // 5 minute steps
-                                formatter: { "\(Int($0/60)) min" }
-                            )
-                            .onChange(of: reminderManager.postureReminderInterval) { _ in
-                                reminderManager.startTimers()
-                            }
-                            
                             // Blink reminder: 15sec-10min with variable steps
                             SettingsSlider(
                                 title: "Blink Reminder",
@@ -1192,6 +1180,20 @@ struct SettingsView: View {
                             )
                             .onChange(of: reminderManager.blinkReminderInterval) { _ in
                                 reminderManager.startTimers()
+                                reminderManager.resetPopups()
+                            }
+                            
+                            // Posture reminder: 5-30 minutes in 5-minute steps
+                            SettingsSlider(
+                                title: "Posture Reminder",
+                                value: $reminderManager.postureReminderInterval,
+                                range: 300...1800, // 5-30 minutes
+                                step: 300, // 5 minute steps
+                                formatter: { "\(Int($0/60)) min" }
+                            )
+                            .onChange(of: reminderManager.postureReminderInterval) { _ in
+                                reminderManager.startTimers()
+                                reminderManager.resetPopups()
                             }
                             
                             // Distance Focus reminder: 5-30 minutes in 5-minute steps
@@ -1204,10 +1206,11 @@ struct SettingsView: View {
                             )
                             .onChange(of: reminderManager.distanceFocusReminderInterval) { _ in
                                 reminderManager.startTimers()
+                                reminderManager.resetPopups()
                             }
                         }
                     }
-                    
+                    /*
                     // Test buttons section
                     SettingsCard {
                         VStack(alignment: .leading, spacing: 14) {
@@ -1216,12 +1219,12 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                             
                             VStack(spacing: 8) {
-                                ilebButton(text: "Posture") {
-                                    reminderManager.testPostureReminder()
-                                }
                                 
                                 ilebButton(text: "Blink") {
                                     reminderManager.testBlinkReminder()
+                                }
+                                ilebButton(text: "Posture") {
+                                    reminderManager.testPostureReminder()
                                 }
                                 
                                 ilebButton(text: "Distance Focus") {
@@ -1230,7 +1233,8 @@ struct SettingsView: View {
                             }
                         }
                     }
-                    
+                    */
+                     
                     // Reset & Quit section
                     SettingsCard {
                         VStack(alignment: .leading, spacing: 14) {
@@ -1239,15 +1243,16 @@ struct SettingsView: View {
                                 .foregroundColor(.secondary)
                             
                             VStack(spacing: 8) {
-                                ilebButton(text: "Reset Pop-ups") {
+                                ilebButton(text: "Reset Reminders") {
                                     reminderManager.resetPopups()
                                 }
-                                
+                                /*
                                 ilebButton(text: "Close") {
                                     isPresented = false
                                 }
+                                 */
                                 
-                                ilebButton(text: "Quit App", destructive: true) {
+                                ilebButton(text: "Quit App", destructive: false) {
                                     NSApplication.shared.terminate(nil)
                                 }
                             }
