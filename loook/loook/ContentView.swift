@@ -192,6 +192,7 @@ class ReminderManager: ObservableObject {
                             
                             // Check queue after a reasonable delay to allow animations to complete
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                                self.showCountdownReminder = false
                                 self.checkQueue()
                             }
                         }
