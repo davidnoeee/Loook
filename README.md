@@ -1,4 +1,4 @@
-![loook-github](https://github.com/user-attachments/assets/fdc0e7ea-2f2d-430f-a7b5-ca19606fa5a1)
+![loook-github](https://github.com/user-attachments/assets/52bb595d-187b-44ed-8968-d8a435fb759d)
 
 # Loook - A simple eye health app!
 I'll add a documentation eventually! :)
